@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/mnuSetup"
+        android:title="@string/mnu_setup">
+        <menu>
+            <item
+                android:id="@+id/mnuSetupStart"
+                android:onClick="hSetupStart"
+                android:title="@string/mnu_setup_start" />
+            <item
+                android:id="@+id/mnuSetupFinish"
+                android:onClick="hSetupFinish"
+                android:title="@string/mnu_setup_finish" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/mnuReset"
+        android:onClick="hReset"
+        android:title="@string/mnu_reset" />
+    <item
+        android:id="@+id/mnuPencil"
+        android:title="@string/mnu_pencil">
+       <menu >
+            <item
+                android:onClick="hFillPencil"
+                android:title="@string/mnu_pencil_fill" />
+            <item
+                android:onClick="hClearPencil"
+                android:title="@string/mnu_pencil_clear" />
+        </menu>
+    </item>
+</menu>

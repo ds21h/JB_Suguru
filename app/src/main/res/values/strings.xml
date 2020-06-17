@@ -1,3 +1,17 @@
 <resources>
-    <string name="app_name">JB_Suguru</string>
+    <string name="app_name">Suguru</string>
+    <string name="mnu_setup">Setup</string>
+    <string name="mnu_setup_start">Start</string>
+    <string name="mnu_setup_finish">Finish</string>
+    <string name="vw_pencil">P</string>
+    <string name="vw_group">Group</string>
+    <string name="head_game_params">Game parameters</string>
+    <string name="lb_rows">Rows:</string>
+    <string name="lb_columns">Columns:</string>
+    <string name="lb_maxvalue">Max. Value:</string>
+    <string name="lb_ok">OK</string>
+    <string name="mnu_reset">Reset Game</string>
+    <string name="mnu_pencil">Pencil</string>
+    <string name="mnu_pencil_fill">Fill</string>
+    <string name="mnu_pencil_clear">Clear</string>
 </resources>

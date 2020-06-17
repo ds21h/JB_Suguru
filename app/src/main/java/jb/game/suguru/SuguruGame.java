@@ -1,14 +1,79 @@
 package jb.game.suguru;
 
+import java.util.ArrayList;
+import java.util.List;
+
 class SuguruGame {
+    private int mGameStatus;
+    static final int cStatusNone = 0;
+    static final int cStatusSetupGroups = 1;
+    static final int cStatusSetupValues = 2;
+    static final int cStatusGenerate = 3;
+    static final int cStatusPlay = 4;
+    static final int cStatusSolved = 5;
+
     private int mRows;
     private int mColumns;
+    private int mMaxValue;
     private PlayField mPlayField;
+    private List<Group> mGroups;
+    private Group mSetupGroup;
+    private int mSetupTaken;
 
     SuguruGame(){
-        mRows = 10;
-        mColumns = 8;
-        mPlayField = new PlayField(mRows, mColumns);
+        mGameStatus = cStatusNone;
+        mSetupGroup = null;
+        mRows = 6;
+        mColumns = 6;
+        mMaxValue = 5;
+        mPlayField = new PlayField(mRows * mColumns);
+        mGroups = new ArrayList<>();
+    }
+
+    SuguruGame(List<Group> pGroups, List<PlayField> pFields, int pGameRows, int pGameColumns,
+               int pMaxValue, int pStatus, int pDifficulty, int pSelectedField, int pUsedTime){
+        int lGroupCount;
+        int lCellCount;
+        Group lGroup;
+        int lCellNr;
+        Cell lCell;
+
+        mRows = pGameRows;
+        mColumns = pGameColumns;
+        mMaxValue = pMaxValue;
+        mGameStatus = pStatus;
+
+        mGroups = pGroups;
+        if (pFields.size() > 0){
+            mPlayField = pFields.get(0);
+        } else {
+            mPlayField = new PlayField(mRows * mColumns);
+        }
+
+        for (lGroupCount = 0; lGroupCount < mGroups.size(); lGroupCount++){
+            lGroup = mGroups.get(lGroupCount);
+            for (lCellCount = 0; lCellCount < lGroup.xSize(); lCellCount++){
+                lCellNr = lGroup.xCell(lCellCount);
+                lCell = mPlayField.xCell(lCellNr);
+                lCell.xGroup(lGroupCount);
+                lCell.xBndLeft(sLeftBorder(lCellNr, lGroup));
+                lCell.xBndRight(sRightBorder(lCellNr, lGroup));
+                lCell.xBndTop(sTopBorder(lCellNr, lGroup));
+                lCell.xBndBottom(sBottomBorder(lCellNr, lGroup));
+            }
+        }
+        if (mGameStatus == cStatusSetupGroups){
+            mSetupGroup = new Group();
+            mSetupTaken = 0;
+            for (lCellCount = 0; lCellCount < mRows * mColumns; lCellCount++){
+                if (mPlayField.xCell(lCellCount).xSetupSel()){
+                    mSetupGroup.xAdd(lCellCount);
+                }
+                if (mPlayField.xCell(lCellCount).xSetupTaken()){
+                    mSetupTaken++;
+                }
+            }
+        }
     }
 
     int xRows(){
@@ -19,7 +84,402 @@ class SuguruGame {
         return mColumns;
     }
 
+    int xMaxValue(){
+        return mMaxValue;
+    }
+
+    int xGameStatus(){
+        return mGameStatus;
+    }
+
+    List<Group> xGroups(){
+        return mGroups;
+    }
+
     PlayField xPlayField(){
         return mPlayField;
+    }
+
+    boolean xPencilMode(){
+        return mPlayField.xPencilMode();
+    }
+
+    void xPencilFlip(){
+        mPlayField.xPencilFlip();
+    }
+
+    boolean xShowGroupButton(){
+        if (mGameStatus == cStatusSetupGroups && mSetupGroup != null && mSetupGroup.xSize() > 0){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void xStoreGroup(){
+        int lCount;
+        int lCellNr;
+        int lRow;
+        int lColumn;
+        boolean lGroupOK;
+        boolean lCellOK;
+        Cell lCell;
+
+        mPlayField.xResetConflicts();
+        if (mSetupGroup != null){
+            lGroupOK = true;
+            if (mSetupGroup.xSize() > 1){
+                for (lCount = 0; lCount < mSetupGroup.xSize(); lCount++){
+                    lCellNr = mSetupGroup.xCell(lCount);
+                    if (sLeftBorder(lCellNr, mSetupGroup)
+                            && sRightBorder(lCellNr, mSetupGroup)
+                            && sTopBorder(lCellNr, mSetupGroup)
+                            && sBottomBorder(lCellNr, mSetupGroup)){
+                        lGroupOK = false;
+                        break;
+                    }
+                }
+            }
+            if (lGroupOK){
+                for (lCount = 0; lCount < mSetupGroup.xSize(); lCount++){
+                    lCellNr = mSetupGroup.xCell(lCount);
+                    lCell = mPlayField.xCell(lCellNr);
+                    lCell.xGroup(mGroups.size());
+
+                    lCell.xBndLeft(!mSetupGroup.xContains(lCellNr - 1));
+                    lCell.xBndRight(!mSetupGroup.xContains(lCellNr + 1));
+                    lCell.xBndTop(!mSetupGroup.xContains(lCellNr - mColumns));
+                    lCell.xBndBottom(!mSetupGroup.xContains(lCellNr + mColumns));
+                    lCell.xSetupSel(false);
+                    lCell.xSetupTaken(true);
+                }
+                mSetupTaken += mSetupGroup.xSize();
+                mGroups.add(mSetupGroup);
+                mSetupGroup = null;
+                if (mSetupTaken >= mRows * mColumns){
+                    mGameStatus = cStatusSetupValues;
+                }
+            }
+        }
+    }
+
+    private boolean sLeftBorder(int pCellNr, Group pGroup){
+        int lColumn;
+        boolean lResult;
+
+        lColumn = pCellNr % mColumns;
+        lResult = true;
+        if (lColumn > 0){
+            if (pGroup.xContains(pCellNr - 1)){
+                lResult  = false;
+            }
+        }
+        return lResult;
+    }
+
+    private boolean sRightBorder(int pCellNr, Group pGroup){
+        int lColumn;
+        boolean lResult;
+
+        lColumn = pCellNr % mColumns;
+        lResult = true;
+        if (lColumn < mColumns - 1){
+            if (pGroup.xContains(pCellNr + 1)){
+                lResult  = false;
+            }
+        }
+        return lResult;
+    }
+
+    private boolean sTopBorder(int pCellNr, Group pGroup){
+        int lRow;
+        boolean lResult;
+
+        lRow = pCellNr / mColumns;
+        lResult = true;
+        if (lRow > 0){
+            if (pGroup.xContains(pCellNr - mColumns)){
+                lResult  = false;
+            }
+        }
+        return lResult;
+    }
+
+    private boolean sBottomBorder(int pCellNr, Group pGroup){
+        int lRow;
+        boolean lResult;
+
+        lRow = pCellNr / mColumns;
+        lResult = true;
+        if (lRow < mRows - 1){
+            if (pGroup.xContains(pCellNr + mColumns)){
+                lResult  = false;
+            }
+        }
+        return lResult;
+    }
+
+    Cell xPlayCell(int pRow, int pColumn){
+        return mPlayField.xCell(pRow * mColumns + pColumn);
+    }
+
+    void xSelection(int pRow, int pColumn){
+        int lCellNr;
+
+        lCellNr = pRow * mColumns + pColumn;
+        if (mGameStatus == cStatusSetupGroups){
+            mPlayField.xCell(lCellNr).xConflict(false);
+            if (mSetupGroup == null){
+                mSetupGroup = new Group();
+            }
+            if (mSetupGroup.xContains(lCellNr)){
+                if (mSetupGroup.xDelete(lCellNr)){
+                    mPlayField.xCell(lCellNr).xSetupSel(false);
+                }
+            } else {
+                if (mSetupGroup.xSize() < mMaxValue){
+                    if (mSetupGroup.xAdd(lCellNr)){
+                        mPlayField.xCell(lCellNr).xSetupSel(true);
+                    }
+                }
+            }
+        } else {
+            mPlayField.xSelection(lCellNr);
+        }
+    }
+
+    boolean xIsSelection(int pRow, int pColumn){
+        if (mPlayField.xSelection() == (pRow * mColumns) + pColumn){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+ /*   void xGenerate(){
+        Generator lGenerator;
+
+        lGenerator = new Generator(mRows, mColumns);
+        lGenerator.xGenerate();
+        mPlayField = lGenerator.xPlayField();
+        mGroups = lGenerator.xGroups();
+    } */
+
+    void xStartSetUp(int pRows, int pColumns, int pMaxValue) {
+        mGameStatus = cStatusSetupGroups;
+        mRows = pRows;
+        mColumns = pColumns;
+        mMaxValue = pMaxValue;
+        mSetupTaken = 0;
+        mPlayField = new PlayField(mRows * mColumns);
+    }
+
+    void xFinishSetup(){
+        Cell lCell;
+        int lCount;
+
+        if (sCheckGame()){
+            for (lCount = 0; lCount < mRows * mColumns; lCount++){
+                lCell = mPlayField.xCell(lCount);
+                if (lCell.xValue() > 0){
+                    lCell.xFixed(true);
+                }
+                lCell.xSetupTaken(false);
+                lCell.xSetupSel(false);
+            }
+            mGameStatus = cStatusPlay;
+        }
+    }
+
+    void xReset(){
+        mPlayField.xResetField();
+        mGameStatus = cStatusPlay;
+    }
+
+    void xProcessDigit(int pDigit) {
+        Cell lCell;
+
+        if (pDigit >= 1 && pDigit <= mMaxValue) {
+            lCell = mPlayField.xSelectedCell();
+            if (mPlayField.xPencilMode()) {
+                if (lCell.xValue() == 0){
+                    lCell.xPencilFlip(pDigit);
+                }
+            } else {
+                if (!lCell.xFixed()) {
+                    if (mPlayField.xSetSelectedCellValue(pDigit)){
+                        if (sCheckGame()){
+                            sAdjustGroup(mPlayField.xSelection(), pDigit);
+                            sAdjustSurr(mPlayField.xSelection(), pDigit);
+                            if (mPlayField.xFieldFull()){
+                                mGameStatus = cStatusSolved;
+                            }
+                        }
+                    } else {
+                        sCheckGame();
+                    }
+                }
+            }
+        }
+    }
+
+    void xFillPencil(){
+        sInitPencils();
+        sAdjustPencils();
+    }
+
+    void sInitPencils(){
+        int lCount;
+        Cell lCell;
+        Group lGroup;
+
+        for (lCount = 0; lCount < mRows * mColumns; lCount++){
+            lCell = mPlayField.xCell(lCount);
+            if (lCell.xValue() > 0){
+                lCell.xClearPencils();
+            } else {
+                lGroup = mGroups.get(lCell.xGroup());
+                lCell.xSetPencils(lGroup.xSize());
+            }
+        }
+    }
+
+    void sAdjustPencils(){
+        int lCount;
+        int lValue;
+
+        for (lCount = 0; lCount < mRows * mColumns; lCount++){
+            lValue = mPlayField.xCell(lCount).xValue();
+            if (lValue > 0){
+                sAdjustGroup(lCount, lValue);
+                sAdjustSurr(lCount, lValue);
+            }
+        }
+    }
+
+    void sAdjustGroup(int pCellNr, int pPencil){
+        Group lGroup;
+        int lCount;
+
+        lGroup = mGroups.get(mPlayField.xCell(pCellNr).xGroup());
+        for (lCount = 0; lCount < lGroup.xSize(); lCount++){
+            mPlayField.xCell(lGroup.xCell(lCount)).xPencil(pPencil, false);
+        }
+    }
+
+    void sAdjustSurr(int pCellNr, int pPencil){
+        int lStartRow;
+        int lEndRow;
+        int lRow;
+        int lStartColumn;
+        int lEndColumn;
+        int lColumn;
+
+        lRow = pCellNr / mColumns;
+        lColumn = pCellNr % mColumns;
+        if (lRow > 0){lStartRow = lRow - 1;} else {lStartRow = lRow;}
+        if (lRow < mRows -1){lEndRow = lRow + 1;} else {lEndRow = lRow;}
+        if (lColumn > 0){lStartColumn = lColumn - 1;} else {lStartColumn = lColumn;}
+        if (lColumn < mColumns - 1){lEndColumn = lColumn + 1;} else {lEndColumn = lColumn;}
+
+        for (lRow = lStartRow; lRow <= lEndRow; lRow++){
+            for (lColumn = lStartColumn; lColumn <= lEndColumn; lColumn++){
+                mPlayField.xCell(lRow * mColumns + lColumn).xPencil(pPencil, false);
+            }
+        }
+    }
+
+    void xClearPencil(){
+        int lCount;
+        Cell lCell;
+
+        for (lCount = 0; lCount < mRows * mColumns; lCount++){
+            lCell = mPlayField.xCell(lCount);
+            lCell.xClearPencils();
+        }
+    }
+
+    private boolean sCheckGame(){
+        boolean lResult;
+        int lRow;
+        int lColumn;
+        int lCellNr;
+
+        lResult = true;
+        mPlayField.xResetConflicts();
+        lCellNr = 0;
+        for (lRow = 0; lRow < mRows; lRow++){
+            for (lColumn = 0; lColumn < mColumns; lColumn++){
+                if (mPlayField.xCell(lCellNr).xValue() > 0){
+                    lResult = sTestGroup(lCellNr);
+                    if (!sTestSurr(lRow, lColumn)){
+                        lResult = false;
+                    }
+                }
+                lCellNr++;
+            }
+        }
+        return lResult;
+    }
+
+    private boolean sTestGroup(int pCellNr){
+        boolean lResult;
+        Group lGroup;
+        int lGroupCount;
+        int lCompCellNr;
+        Cell lTestCell;
+        Cell lCompCell;
+
+        lResult = true;
+        lTestCell = mPlayField.xCell(pCellNr);
+        lGroup = mGroups.get(lTestCell.xGroup());
+        if (lTestCell.xValue() > lGroup.xSize()){
+            lTestCell.xConflict(true);
+            lResult = false;
+        } else {
+            for (lGroupCount = 0; lGroupCount < lGroup.xSize(); lGroupCount++){
+                lCompCellNr = lGroup.xCell(lGroupCount);
+                lCompCell = mPlayField.xCell(lCompCellNr);
+                if (lCompCell != lTestCell){
+                    if (lTestCell.xValue() == lCompCell.xValue()){
+                        lTestCell.xConflict(true);
+                        lResult = false;
+                    }
+                }
+            }
+        }
+        return lResult;
+    }
+
+    private boolean sTestSurr(int pRow, int pColumn){
+        boolean lResult;
+        int lStartRow;
+        int lEndRow;
+        int lRow;
+        int lStartColumn;
+        int lEndColumn;
+        int lColumn;
+        Cell lTestCell;
+        Cell lCompCell;
+
+        if (pRow > 0){lStartRow = pRow - 1;} else {lStartRow = pRow;}
+        if (pRow < mRows -1){lEndRow = pRow + 1;} else {lEndRow = pRow;}
+        if (pColumn > 0){lStartColumn = pColumn - 1;} else {lStartColumn = pColumn;}
+        if (pColumn < mColumns - 1){lEndColumn = pColumn + 1;} else {lEndColumn = pColumn;}
+
+        lResult = true;
+        lTestCell = mPlayField.xCell(pRow * mColumns + pColumn);
+        for (lRow = lStartRow; lRow <= lEndRow; lRow++){
+            for (lColumn = lStartColumn; lColumn <= lEndColumn; lColumn++){
+                lCompCell = mPlayField.xCell(lRow * mColumns + lColumn);
+                if (lTestCell != lCompCell){
+                    if (lTestCell.xValue() == lCompCell.xValue()){
+                        lTestCell.xConflict(true);
+                        lResult = false;
+                    }
+                }
+            }
+        }
+        return lResult;
     }
 }

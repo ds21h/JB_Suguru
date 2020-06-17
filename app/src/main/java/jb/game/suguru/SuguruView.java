@@ -6,37 +6,50 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 
 public class SuguruView extends View {
     private final int cMargin = 10;
     private final int cButtonMargin = 20;
+    private int mMargin = cMargin;
 
     private Paint mPaint = new Paint();
 
     private final int cColorBackNorm = Color.argb(255, 255, 255, 245);
     private final int cColorBackFixed = Color.argb(255, 230, 230, 230);
+    private final int cColorBackSel = Color.argb(255, 255, 255, 0);
+    private final int cColorBackTaken = Color.argb(255, 200, 200, 200);
+    private final int cColorBackConflict = Color.argb(255, 255, 200, 200);
     private final int cColorForeNorm = Color.BLACK;
     private final int cColorForeConflict = Color.RED;
+    private final int cColorButtonNorm = Color.argb(255, 255, 255, 245);
+    private final int cColorButtonPencil = Color.argb(255, 200, 255, 200);
 
     private final int cAlphaNorm = 255;
     private final int cAlphaDisabled = 100;
 
     private final int cStrokeNone = 0;
     private final int cStrokeNarrow = 3;
+    private final int cStrokeWide = 10;
     private final int cStrokeSelection = 12;
 
     private SuguruGame mGame = null;
     private float mCellSize;
     private float mButtonSize;
-    private boolean mEnabled;
+    private RectF[] mButton = new RectF[6];
+    private boolean mEnabled = true;
+    private boolean mButtonsEnabled = false;
+    private Context mContext;
 
     public SuguruView(Context pContext) {
         super(pContext);
+        mContext = pContext;
     }
 
     public SuguruView(Context pContext, AttributeSet pAttrSet) {
         super(pContext, pAttrSet);
+        mContext = pContext;
     }
 
     public void setGame(SuguruGame pGame) {
@@ -44,14 +57,95 @@ public class SuguruView extends View {
     }
 
     @Override
+    public boolean onTouchEvent(MotionEvent pEvent) {
+        float lDispl;
+        int lColumn;
+        int lRow;
+        boolean lCellSelect;
+        RectF lRect;
+        int lCount;
+
+        if (mGame != null && mEnabled){
+            if (pEvent.getAction() == MotionEvent.ACTION_DOWN && mCellSize > 0) {
+                lCellSelect = false;
+                lDispl = pEvent.getX() - mMargin;
+                if (lDispl >= 0) {
+                    lColumn = (int) (lDispl / mCellSize);
+                    if (lColumn < mGame.xColumns()) {
+                        lDispl = pEvent.getY() - cMargin;
+                        if (lDispl >= 0) {
+                            lRow = (int) (lDispl / mCellSize);
+                            if (lRow < mGame.xRows()) {
+                                lCellSelect = true;
+                                mGame.xSelection(lRow, lColumn);
+                                invalidate();
+                            }
+                        }
+                    }
+                }
+                if (!lCellSelect) {
+                    if (mButtonsEnabled){
+                        lRect = new RectF(pEvent.getX(), pEvent.getY(), pEvent.getX(), pEvent.getY());
+                        if (mButton[0].contains(lRect)) {
+                            if (mGame.xGameStatus() == SuguruGame.cStatusPlay){
+                                mGame.xPencilFlip();
+                                invalidate();
+                            } else {
+                                if (mGame.xGameStatus() == SuguruGame.cStatusSetupGroups){
+                                    mGame.xStoreGroup();
+                                    invalidate();
+                                }
+                            }
+                        } else {
+                            for (lCount = 1; lCount < mButton.length; lCount++) {
+                                if (mButton[lCount].contains(lRect)) {
+                                    mGame.xProcessDigit(lCount);
+/*                                    if (mGame.xGameStatus() == SudokuGame.cStatusSolved) {
+                                        if (mIntView != null) {
+                                            mIntView.onSolved();
+                                        }
+                                    } */
+                                    invalidate();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
     public void onDraw(Canvas pCanvas) {
         super.onDraw(pCanvas);
+        float lCellHor;
+        float lCellVert;
 
         if (mGame != null){
-            mCellSize = (getWidth() - (2 * cMargin)) / (float)mGame.xColumns();
-            mButtonSize = (getWidth() / 7F) - (2 * cButtonMargin);
+            mButtonSize = (getWidth() / (float)(mGame.xMaxValue() + 2)) - (2 * cButtonMargin);
+            lCellHor = (getWidth() - (2 * cMargin)) / (float)mGame.xColumns();
+            lCellVert = (getHeight() - cMargin - (3 * cButtonMargin) - mButtonSize) / (float)(mGame.xRows());
+            if (lCellHor < lCellVert){
+                mCellSize = lCellHor;
+                mMargin = cMargin;
+            } else {
+                mCellSize = lCellVert;
+                mMargin = (int)((getWidth() - (mGame.xColumns() * mCellSize)) / 2);
+            }
             sDrawPlayField(pCanvas);
-            sDrawButtons(pCanvas);
+            if (mGame.xGameStatus() == SuguruGame.cStatusPlay
+                    || mGame.xGameStatus() == SuguruGame.cStatusSetupGroups
+                    || mGame.xGameStatus() == SuguruGame.cStatusSetupValues){
+                if (mButton.length != mGame.xMaxValue() + 1){
+                    mButton = new RectF[mGame.xMaxValue() + 1];
+                }
+                sDrawButtons(pCanvas);
+                mButtonsEnabled = true;
+            } else {
+                mButtonsEnabled = false;
+            }
         }
     }
 
@@ -64,7 +158,7 @@ public class SuguruView extends View {
         float lRowMargin;
         float lColumnMargin;
         RectF lRect;
-        PlayCell lCell;
+        Cell lCell;
         float lPencilCellSize;
         int lPencil;
         int lAlpha;
@@ -78,25 +172,39 @@ public class SuguruView extends View {
         for (lRow = 0; lRow < mGame.xRows(); lRow++) {
             lRowMargin = (lRow * mCellSize) + cMargin;
             for (lColumn = 0; lColumn < mGame.xColumns(); lColumn++) {
-                lColumnMargin = (lColumn * mCellSize) + cMargin;
-                lCell = mGame.xPlayField().xCell(lRow, lColumn);
-                lRect = new RectF(lColumnMargin, lRowMargin, lColumnMargin + mCellSize, lRowMargin + mCellSize);
+                lColumnMargin = (lColumn * mCellSize) + mMargin;
+                lCell = mGame.xPlayCell(lRow, lColumn);
+                lRect = new RectF(lColumnMargin, lRowMargin,
+                        lColumnMargin + mCellSize, lRowMargin + mCellSize);
 
                 //      Background
                 mPaint.setStrokeWidth(cStrokeNone);
                 mPaint.setStyle(Paint.Style.FILL);
-                if (lCell.xFixed()) {
-                    mPaint.setColor(cColorBackFixed);
+                if (mGame.xGameStatus() == SuguruGame.cStatusSetupGroups){
+                    if (lCell.xSetupTaken()){
+                        mPaint.setColor(cColorBackTaken);
+                    } else {
+                        if (lCell.xConflict()){
+                            mPaint.setColor(cColorBackConflict);
+                        } else {
+                            if (lCell.xSetupSel()){
+                                mPaint.setColor(cColorBackSel);
+                            } else {
+                                mPaint.setColor(cColorBackNorm);
+                            }
+                        }
+                    }
                 } else {
-                    mPaint.setColor(cColorBackNorm);
+                    if (lCell.xFixed()) {
+                        mPaint.setColor(cColorBackFixed);
+                    } else {
+                        if (mGame.xIsSelection(lRow, lColumn)){
+                            mPaint.setColor(cColorBackSel);
+                        } else {
+                            mPaint.setColor(cColorBackNorm);
+                        }
+                    }
                 }
-                mPaint.setAlpha(lAlpha);
-                pCanvas.drawRect(lRect, mPaint);
-
-                //      Cell outline
-                mPaint.setStrokeWidth(cStrokeNarrow);
-                mPaint.setStyle(Paint.Style.STROKE);
-                mPaint.setColor(cColorForeNorm);
                 mPaint.setAlpha(lAlpha);
                 pCanvas.drawRect(lRect, mPaint);
 
@@ -105,79 +213,172 @@ public class SuguruView extends View {
                 if (lCell.xValue() > 0) {
                     //  Normal
                     mPaint.setTextSize(mCellSize * 0.8F);
+                    mPaint.setTextAlign(Paint.Align.CENTER);
                     if (lCell.xConflict()) {
                         mPaint.setColor(cColorForeConflict);
                     } else {
                         mPaint.setColor(cColorForeNorm);
                     }
                     mPaint.setAlpha(lAlpha);
-                    pCanvas.drawText(String.valueOf(lCell.xValue()), lRect.centerX(), lRect.bottom - mPaint.getFontMetrics().descent, mPaint);
+                    pCanvas.drawText(String.valueOf(lCell.xValue()),
+                            lRect.centerX(),
+                            lRect.bottom - mPaint.getFontMetrics().descent,
+                            mPaint);
                 } else {
                     // Pencil
                     mPaint.setTextSize(lPencilCellSize);
+                    mPaint.setTextAlign(Paint.Align.CENTER);
                     mPaint.setColor(cColorForeNorm);
                     mPaint.setAlpha(lAlpha);
                     for (lPencilRow = 0; lPencilRow < 3; lPencilRow++) {
                         for (lPencilColumn = 0; lPencilColumn < 3; lPencilColumn++) {
-                            lPencilPos = (lPencilRow * 3) + lPencilColumn;
+                            lPencil = (lPencilRow * 3) + lPencilColumn + 1;
+                            if (lCell.xPencil(lPencil)) {
+                                pCanvas.drawText(String.valueOf(lPencil), lRect.left + (lPencilColumn * lPencilCellSize) + (lPencilCellSize / 2), lRect.top + ((lPencilRow + 1) * lPencilCellSize) - (mPaint.getFontMetrics().descent / 2), mPaint);
+                            }
+
+/*                            lPencilPos = (lPencilRow * 3) + lPencilColumn;
                             lPencil = lPencilPos / 2;
                             if (lPencilPos == (lPencil * 2)){
                                 lPencil++;
                                 if (lCell.xPencil(lPencil)) {
-                                    pCanvas.drawText(String.valueOf(lPencil), lRect.left + (lPencilColumn * lPencilCellSize) + (lPencilCellSize / 2), lRect.top + ((lPencilRow + 1) * lPencilCellSize) - (mPaint.getFontMetrics().descent / 2), mPaint);
+                                    pCanvas.drawText(String.valueOf(lPencil),
+                                            lRect.left + (lPencilColumn * lPencilCellSize) + (lPencilCellSize / 2),
+                                            lRect.top + ((lPencilRow + 1) * lPencilCellSize) - (mPaint.getFontMetrics().descent / 2),
+                                            mPaint);
                                 }
-                            }
+                            } */
                         }
                     }
                 }
+
+                mPaint.setStyle(Paint.Style.STROKE);
+                mPaint.setColor(cColorForeNorm);
+                mPaint.setAlpha(lAlpha);
+                if (lCell.xBndLeft()){
+                    mPaint.setStrokeWidth(cStrokeWide);
+                } else {
+                    mPaint.setStrokeWidth(cStrokeNarrow);
+                }
+                pCanvas.drawLine(lColumnMargin, lRowMargin, lColumnMargin, lRowMargin + mCellSize, mPaint);
+
+                if (lCell.xBndRight()){
+                    mPaint.setStrokeWidth(cStrokeWide);
+                } else {
+                    mPaint.setStrokeWidth(cStrokeNarrow);
+                }
+                pCanvas.drawLine(lColumnMargin + mCellSize, lRowMargin, lColumnMargin + mCellSize, lRowMargin + mCellSize, mPaint);
+
+                if (lCell.xBndTop()){
+                    mPaint.setStrokeWidth(cStrokeWide);
+                } else {
+                    mPaint.setStrokeWidth(cStrokeNarrow);
+                }
+                pCanvas.drawLine(lColumnMargin, lRowMargin, lColumnMargin + mCellSize, lRowMargin, mPaint);
+
+                if (lCell.xBndBottom()){
+                    mPaint.setStrokeWidth(cStrokeWide);
+                } else {
+                    mPaint.setStrokeWidth(cStrokeNarrow);
+                }
+                pCanvas.drawLine(lColumnMargin, lRowMargin + mCellSize, lColumnMargin + mCellSize, lRowMargin + mCellSize, mPaint);
             }
         }
-
-        mPaint.setStrokeWidth(cStrokeSelection);
-        pCanvas.drawRect((mGame.xPlayField().xSelectionColumn() * mCellSize) + cMargin, (mGame.xPlayField().xSelectionRow() * mCellSize) + cMargin, ((mGame.xPlayField().xSelectionColumn() + 1) * mCellSize) + cMargin, ((mGame.xPlayField().xSelectionRow() + 1) * mCellSize) + cMargin, mPaint);
     }
 
     private void sDrawButtons(Canvas pCanvas) {
-/*        RectF lRectF;
-        int lCount;
-        float lCountSize;
         int lAlpha;
+        int lCount;
+        RectF lRectF;
 
         if (mEnabled){
             lAlpha = cAlphaNorm;
         } else {
             lAlpha = cAlphaDisabled;
         }
+        if (mGame.xGameStatus() == SuguruGame.cStatusSetupGroups){
+            if (mGame.xShowGroupButton()){
+                lRectF = new RectF();
+                lRectF.left = cButtonMargin + mButtonSize;
+                lRectF.top = getHeight() - (2 * cButtonMargin) - mButtonSize;
+                lRectF.right = getWidth() - cButtonMargin - mButtonSize;
+                lRectF.bottom = lRectF.top + mButtonSize;
+                mButton[0] = lRectF;
+
+                mPaint.setStrokeWidth(cStrokeNone);
+                mPaint.setStyle(Paint.Style.FILL);
+                mPaint.setColor(cColorButtonNorm);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawRect(lRectF, mPaint);
+
+                mPaint.setColor(cColorForeNorm);
+                mPaint.setStrokeWidth(cStrokeNarrow);
+                mPaint.setStyle(Paint.Style.STROKE);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawRect(lRectF, mPaint);
+
+                mPaint.setColor(cColorForeNorm);
+                mPaint.setTextSize(mButtonSize * 0.8F);
+                mPaint.setTextAlign(Paint.Align.CENTER);
+                mPaint.setStyle(Paint.Style.FILL);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawText(mContext.getString(R.string.vw_group) , lRectF.centerX(), lRectF.bottom - mPaint.getFontMetrics().descent, mPaint);
+            } else {
+                mButtonsEnabled = false;
+            }
+        } else {
+            for (lCount = 1; lCount <= mGame.xMaxValue(); lCount++) {
+                lRectF = sRectButton(lCount);
+                mButton[lCount] = lRectF;
+                mPaint.setStrokeWidth(cStrokeNone);
+                mPaint.setStyle(Paint.Style.FILL);
+                mPaint.setColor(cColorButtonNorm);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawRect(lRectF, mPaint);
+
+                mPaint.setColor(cColorForeNorm);
+                mPaint.setStrokeWidth(cStrokeNarrow);
+                mPaint.setStyle(Paint.Style.STROKE);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawRect(lRectF, mPaint);
+
+                mPaint.setColor(cColorForeNorm);
+                mPaint.setTextSize(mButtonSize * 0.8F);
+                mPaint.setTextAlign(Paint.Align.CENTER);
+                mPaint.setStyle(Paint.Style.FILL);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawText(String.valueOf(lCount), lRectF.centerX(), lRectF.bottom - mPaint.getFontMetrics().descent, mPaint);
+            }
+            lRectF = sRectButton(99);
+            mButton[0] = lRectF;
+            if (mGame.xGameStatus() != SuguruGame.cStatusSetupValues) {
+                mPaint.setStrokeWidth(cStrokeNone);
+                mPaint.setStyle(Paint.Style.FILL);
+                if (mGame.xPencilMode()) {
+                    mPaint.setColor(cColorButtonPencil);
+                } else {
+                    mPaint.setColor(cColorButtonNorm);
+                }
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawRect(lRectF, mPaint);
+
+                mPaint.setColor(cColorForeNorm);
+                mPaint.setStrokeWidth(cStrokeNarrow);
+                mPaint.setStyle(Paint.Style.STROKE);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawRect(lRectF, mPaint);
+
+                mPaint.setColor(cColorForeNorm);
+                mPaint.setTextSize(mButtonSize * 0.8F);
+                mPaint.setTextAlign(Paint.Align.CENTER);
+                mPaint.setStyle(Paint.Style.FILL);
+                mPaint.setAlpha(lAlpha);
+                pCanvas.drawText(mContext.getString(R.string.vw_pencil) , lRectF.centerX(), lRectF.bottom - mPaint.getFontMetrics().descent, mPaint);
+            }
+        }
+/*      float lCountSize;
 
         lCountSize = mCellSize / 3;
-        for (lCount = 1; lCount <= 9; lCount++) {
-            lRectF = sRectButton(lCount);
-            mButton[lCount] = lRectF;
-            mPaint.setStrokeWidth(cStrokeNone);
-            mPaint.setStyle(Paint.Style.FILL);
-            if (mGame.xPlayField().xDigitCount(lCount) < 9) {
-                mPaint.setColor(cColorButtonNorm);
-            } else {
-                mPaint.setColor(cColorButtonFull);
-            }
-            mPaint.setAlpha(lAlpha);
-            pCanvas.drawRect(lRectF, mPaint);
-
-            mPaint.setColor(cColorForeNorm);
-            mPaint.setStrokeWidth(cStrokeNarrow);
-            mPaint.setStyle(Paint.Style.STROKE);
-            mPaint.setAlpha(lAlpha);
-            pCanvas.drawRect(lRectF, mPaint);
-
-            mPaint.setColor(cColorForeNorm);
-            mPaint.setTextSize(mCellSize);
-            mPaint.setStyle(Paint.Style.FILL);
-            mPaint.setAlpha(lAlpha);
-            pCanvas.drawText(String.valueOf(lCount), lRectF.centerX(), lRectF.bottom - mPaint.getFontMetrics().descent, mPaint);
-
-            mPaint.setTextSize(lCountSize);
-            pCanvas.drawText(String.valueOf(mGame.xPlayField().xDigitCount(lCount)), lRectF.right - (lCountSize / 2), lRectF.top + lCountSize, mPaint);
-        }
         lRectF = sRectButton(99);
         mButton[0] = lRectF;
         if (!(mGame.xGameStatus() == SudokuGame.cStatusSetup)) {
@@ -203,5 +404,25 @@ public class SuguruView extends View {
             mPaint.setAlpha(lAlpha);
             pCanvas.drawText(mContext.getString(R.string.vw_pencil) , lRectF.centerX(), lRectF.bottom - mPaint.getFontMetrics().descent, mPaint);
         } */
+    }
+
+    private RectF sRectButton(int pButton) {
+        RectF lRect;
+
+        lRect = new RectF();
+        if (pButton > 0 && pButton <= mGame.xMaxValue()) {
+            lRect.left = cButtonMargin + ((pButton - 1) * (mButtonSize + (2 * cButtonMargin)));
+        } else {
+            if (pButton == 99) {
+                lRect.left = getWidth() - cButtonMargin - mButtonSize;
+            } else {
+                lRect.left = cButtonMargin;
+            }
+        }
+        lRect.top = getHeight() - (2 * cButtonMargin) - mButtonSize;
+        lRect.right = lRect.left + mButtonSize;
+        lRect.bottom = lRect.top + mButtonSize;
+
+        return lRect;
     }
 }

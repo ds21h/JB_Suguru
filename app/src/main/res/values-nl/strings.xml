@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tectonic</string>
+    <string name="mnu_setup">Opzetten</string>
+    <string name="mnu_setup_start">Start</string>
+    <string name="mnu_setup_finish">Klaar</string>
+    <string name="vw_pencil">P</string>
+    <string name="vw_group">Groep</string>
+    <string name="head_game_params">Spel Kenmerken</string>
+    <string name="lb_rows">Rijen:</string>
+    <string name="lb_columns">Kolommen:</string>
+    <string name="lb_maxvalue">Max. Waarde:</string>
+    <string name="lb_ok">OK</string>
+    <string name="mnu_reset">Herstart</string>
+    <string name="mnu_pencil">Potlood</string>
+    <string name="mnu_pencil_fill">Vullen</string>
+    <string name="mnu_pencil_clear">Wissen</string>
+</resources>
