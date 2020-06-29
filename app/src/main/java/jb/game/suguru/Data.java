@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by Jan on 9-2-2019.
@@ -18,7 +19,7 @@ class Data extends SQLiteOpenHelper {
     private static Data mInstance = null;
 
     private static final String cDBName = "Suguru.db";
-    private static final int cDBVersion = 1;
+    private static final int cDBVersion = 2;
     private static String mExternalFilesDir;
 
     static Data getInstance(Context pContext) {
@@ -64,15 +65,24 @@ class Data extends SQLiteOpenHelper {
         sDefineGroup(pDB);
         sDefinePlayField(pDB);
         sDefineCell(pDB);
+        sDefineLib(pDB);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase pDB, int pOldVersion, int pNewVersion) {
-        pDB.execSQL("DROP TABLE IF EXISTS SuguruGame");
-        pDB.execSQL("DROP TABLE IF EXISTS PlayGroup");
-        pDB.execSQL("DROP TABLE IF EXISTS PlayField");
-        pDB.execSQL("DROP TABLE IF EXISTS Cell");
-        onCreate(pDB);
+        switch (pOldVersion){
+            case 1:
+                sDefineLib(pDB);
+                break;
+            default:
+                pDB.execSQL("DROP TABLE IF EXISTS SuguruGame");
+                pDB.execSQL("DROP TABLE IF EXISTS PlayGroup");
+                pDB.execSQL("DROP TABLE IF EXISTS PlayField");
+                pDB.execSQL("DROP TABLE IF EXISTS Cell");
+                pDB.execSQL("DROP TABLE IF EXISTS Lib");
+                onCreate(pDB);
+                break;
+        }
     }
 
     private void sDefineGame(SQLiteDatabase pDB) {
@@ -130,6 +140,20 @@ class Data extends SQLiteOpenHelper {
                         "SetupSel Integer Not Null, " +
                         "SetupTaken Integer Not Null, " +
                         "Pencil Text Not Null" +
+                        ")"
+        );
+    }
+
+    private void sDefineLib(SQLiteDatabase pDB) {
+        pDB.execSQL(
+                "CREATE TABLE Lib " +
+                        "(_ID Integer primary key, " +
+                        "BatchId Integer Not Null, " +
+                        "GameId Integer Not Null, " +
+                        "Rows Integer Not Null, " +
+                        "Columns Integer Not Null, " +
+                        "Difficulty Integer Not Null, " +
+                        "Content Text Not Null" +
                         ")"
         );
     }
@@ -223,7 +247,7 @@ class Data extends SQLiteOpenHelper {
         lValues.put("Status", pGame.xGameStatus());
         lValues.put("Difficulty", 0);
         lValues.put("SelectedField", 0);
-        lValues.put("UsedTime", 0);
+        lValues.put("UsedTime", pGame.xUsedTime());
         lSelection = "ContextId = ?";
         lSelectionArgs = new String[]{"Suguru"};
 
@@ -392,5 +416,75 @@ class Data extends SQLiteOpenHelper {
         lCursor.close();
 
         return lCells;
+    }
+
+    void xLibGame(SuguruGame pGame, int pDifficulty){
+        SQLiteDatabase lDB;
+        int lGameId;
+        ContentValues lValues;
+
+        lDB = this.getWritableDatabase();
+        lGameId = sMaxGameId(lDB);
+        lGameId++;
+
+
+        lValues = new ContentValues();
+        lValues.put("BatchId", 0);
+        lValues.put("GameId", lGameId);
+        lValues.put("Rows", pGame.xRows());
+        lValues.put("Columns", pGame.xColumns());
+        lValues.put("Difficulty", pDifficulty);
+        lValues.put("Content", pGame.xGameBasic());
+
+        lDB.insert("Lib", null, lValues);
+
+        lDB.close();
+    }
+
+    private int sMaxGameId(SQLiteDatabase pDB){
+        Cursor lCursor;
+        int lMax;
+
+        lCursor = pDB.rawQuery("SELECT MAX(GameId) FROM Lib WHERE BatchId = '0'", null);
+        if (lCursor.moveToFirst()){
+            lMax = lCursor.getInt(0);
+        } else {
+            lMax = -1;
+        }
+        lCursor.close();
+        return lMax;
+    }
+
+    LibGame xRandomLibGame(int pDifficulty){
+        SQLiteDatabase lDB;
+        Cursor lCursor;
+        int lSize;
+        Random lRandom;
+        int lPos;
+        String[] lColumns;
+        LibGame lLibGame = null;
+
+        lDB = this.getReadableDatabase();
+
+        lColumns = new String[]{"Rows", "Columns", "Content"};
+
+        lCursor = lDB.query("Lib", lColumns, null, null, null, null, null);
+
+        lSize = lCursor.getCount();
+        if (lSize > 0){
+            lRandom = new Random();
+            lPos = lRandom.nextInt(lSize);
+            lCursor.moveToPosition(lPos);
+
+            lLibGame = new LibGame();
+            lLibGame.xRows = lCursor.getInt(0);
+            lLibGame.xColumns = lCursor.getInt(1);
+            lLibGame.xContent = lCursor.getString(2);
+        }
+        lCursor.close();
+
+        lDB.close();
+
+        return lLibGame;
     }
 }

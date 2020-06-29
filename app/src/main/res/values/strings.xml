@@ -14,4 +14,17 @@
     <string name="mnu_pencil">Pencil</string>
     <string name="mnu_pencil_fill">Fill</string>
     <string name="mnu_pencil_clear">Clear</string>
+    <string name="hd_setup_groups">Groups</string>
+    <string name="hd_setup_values">Values</string>
+    <string name="msg_solved">Puzzle solved!</string>
+    <string name="mnu_store">Store</string>
+    <string name="head_select_difficulty">Select Difficulty</string>
+    <string name="mnu_level_very_easy">Very Easy</string>
+    <string name="mnu_level_easy">Easy</string>
+    <string name="mnu_level_medium">Medium</string>
+    <string name="mnu_level_hard">Hard</string>
+    <string name="mnu_level_very_hard">Very Hard</string>
+    <string name="msg_no_selection">Nothing Selected!</string>
+    <string name="msg_game_stored">Game Stored!</string>
+    <string name="mnu_game">Game</string>
 </resources>

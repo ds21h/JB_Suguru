@@ -15,4 +15,17 @@
     <string name="mnu_pencil">Potlood</string>
     <string name="mnu_pencil_fill">Vullen</string>
     <string name="mnu_pencil_clear">Wissen</string>
+    <string name="hd_setup_groups">Groepen</string>
+    <string name="hd_setup_values">Waarden</string>
+    <string name="msg_solved">Puzzle opgelost!</string>
+    <string name="mnu_store">Opslaan</string>
+    <string name="head_select_difficulty">Zet Moeilijkheid</string>
+    <string name="mnu_level_very_easy">Erg Makkelijk</string>
+    <string name="mnu_level_easy">Makkelijk</string>
+    <string name="mnu_level_medium">Gemiddeld</string>
+    <string name="mnu_level_hard">Moeilijk</string>
+    <string name="mnu_level_very_hard">Erg Moeilijk</string>
+    <string name="msg_no_selection">Niets Geselecteerd!</string>
+    <string name="msg_game_stored">Spel Opgeslagen!</string>
+    <string name="mnu_game">Spel</string>
 </resources>

@@ -10,6 +10,10 @@ import android.view.MotionEvent;
 import android.view.View;
 
 public class SuguruView extends View {
+    interface intSuguruView {
+        void onSolved();
+    }
+
     private final int cMargin = 10;
     private final int cButtonMargin = 20;
     private int mMargin = cMargin;
@@ -42,6 +46,8 @@ public class SuguruView extends View {
     private boolean mButtonsEnabled = false;
     private Context mContext;
 
+    private intSuguruView mIntView = null;
+
     public SuguruView(Context pContext) {
         super(pContext);
         mContext = pContext;
@@ -54,6 +60,10 @@ public class SuguruView extends View {
 
     public void setGame(SuguruGame pGame) {
         mGame = pGame;
+    }
+
+    public void setIntSuguruView(intSuguruView pIntView) {
+        mIntView = pIntView;
     }
 
     @Override
@@ -97,16 +107,18 @@ public class SuguruView extends View {
                                 }
                             }
                         } else {
-                            for (lCount = 1; lCount < mButton.length; lCount++) {
-                                if (mButton[lCount].contains(lRect)) {
-                                    mGame.xProcessDigit(lCount);
-/*                                    if (mGame.xGameStatus() == SudokuGame.cStatusSolved) {
-                                        if (mIntView != null) {
-                                            mIntView.onSolved();
+                            if (mGame.xGameStatus() != SuguruGame.cStatusSetupGroups){
+                                for (lCount = 1; lCount < mButton.length; lCount++) {
+                                    if (mButton[lCount].contains(lRect)) {
+                                        mGame.xProcessDigit(lCount);
+                                        if (mGame.xGameStatus() == SuguruGame.cStatusSolved) {
+                                            if (mIntView != null) {
+                                                mIntView.onSolved();
+                                            }
                                         }
-                                    } */
-                                    invalidate();
-                                    break;
+                                        invalidate();
+                                        break;
+                                    }
                                 }
                             }
                         }

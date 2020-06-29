@@ -17,6 +17,12 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".SelectDifficulty"
+            android:screenOrientation="portrait"
+            android:label="@string/head_select_difficulty"
+            android:theme="@android:style/Theme.Holo.Light.Dialog.NoActionBar">
+        </activity>
+        <activity
             android:name=".SelectGameParams"
             android:screenOrientation="portrait"
             android:label="@string/head_game_params"

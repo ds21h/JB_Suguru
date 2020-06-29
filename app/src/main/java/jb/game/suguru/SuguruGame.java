@@ -17,6 +17,7 @@ class SuguruGame {
     private int mMaxValue;
     private PlayField mPlayField;
     private List<Group> mGroups;
+    private int mUsedTime;
     private Group mSetupGroup;
     private int mSetupTaken;
 
@@ -28,15 +29,12 @@ class SuguruGame {
         mMaxValue = 5;
         mPlayField = new PlayField(mRows * mColumns);
         mGroups = new ArrayList<>();
+        mUsedTime = 0;
     }
 
     SuguruGame(List<Group> pGroups, List<PlayField> pFields, int pGameRows, int pGameColumns,
                int pMaxValue, int pStatus, int pDifficulty, int pSelectedField, int pUsedTime){
-        int lGroupCount;
         int lCellCount;
-        Group lGroup;
-        int lCellNr;
-        Cell lCell;
 
         mRows = pGameRows;
         mColumns = pGameColumns;
@@ -49,6 +47,28 @@ class SuguruGame {
         } else {
             mPlayField = new PlayField(mRows * mColumns);
         }
+        sGroupBorders();
+        if (mGameStatus == cStatusSetupGroups){
+            mSetupGroup = new Group();
+            mSetupTaken = 0;
+            for (lCellCount = 0; lCellCount < mRows * mColumns; lCellCount++){
+                if (mPlayField.xCell(lCellCount).xSetupSel()){
+                    mSetupGroup.xAdd(lCellCount);
+                }
+                if (mPlayField.xCell(lCellCount).xSetupTaken()){
+                    mSetupTaken++;
+                }
+            }
+        }
+        mUsedTime = pUsedTime;
+    }
+
+    private void sGroupBorders(){
+        int lGroupCount;
+        int lCellCount;
+        int lCellNr;
+        Group lGroup;
+        Cell lCell;
 
         for (lGroupCount = 0; lGroupCount < mGroups.size(); lGroupCount++){
             lGroup = mGroups.get(lGroupCount);
@@ -60,18 +80,6 @@ class SuguruGame {
                 lCell.xBndRight(sRightBorder(lCellNr, lGroup));
                 lCell.xBndTop(sTopBorder(lCellNr, lGroup));
                 lCell.xBndBottom(sBottomBorder(lCellNr, lGroup));
-            }
-        }
-        if (mGameStatus == cStatusSetupGroups){
-            mSetupGroup = new Group();
-            mSetupTaken = 0;
-            for (lCellCount = 0; lCellCount < mRows * mColumns; lCellCount++){
-                if (mPlayField.xCell(lCellCount).xSetupSel()){
-                    mSetupGroup.xAdd(lCellCount);
-                }
-                if (mPlayField.xCell(lCellCount).xSetupTaken()){
-                    mSetupTaken++;
-                }
             }
         }
     }
@@ -90,6 +98,18 @@ class SuguruGame {
 
     int xGameStatus(){
         return mGameStatus;
+    }
+
+    int xUsedTime() {
+        return mUsedTime;
+    }
+
+    void xAddUsedTime(int pCorr) {
+        mUsedTime += pCorr;
+    }
+
+    void xResetUsedTime() {
+        mUsedTime = 0;
     }
 
     List<Group> xGroups(){
@@ -265,20 +285,66 @@ class SuguruGame {
         mGroups = lGenerator.xGroups();
     } */
 
+    void xNewGame(LibGame pLibGame){
+        int lCount;
+        String lWork;
+        int lValue;
+        Cell lCell;
+        Group lGroup;
+        int lMax;
+        int lSize;
+
+        mGameStatus = cStatusNone;
+        mRows = pLibGame.xRows;
+        mColumns = pLibGame.xColumns;
+        mGroups.clear();
+        mPlayField = new PlayField(mRows * mColumns);
+
+        for (lCount = 0; lCount < mRows * mColumns; lCount++){
+            lCell = mPlayField.xCell(lCount);
+            lWork = pLibGame.xContent.substring((lCount * 3), (lCount * 3) + 1);
+            lValue = Integer.parseInt(lWork);
+            if (lValue > 0){
+                lCell.xValue(lValue);
+                lCell.xFixed(true);
+            }
+            lWork = pLibGame.xContent.substring((lCount * 3) + 1, (lCount * 3) + 3);
+            lValue = Integer.parseInt(lWork);
+            while (lValue >= mGroups.size()){
+                mGroups.add(new Group());
+            }
+            lGroup = mGroups.get(lValue);
+            lGroup.xAdd(lCount);
+            lCell.xGroup(lValue);
+        }
+        lMax = 0;
+        for (lCount = 0; lCount < mGroups.size(); lCount++) {
+            lSize = mGroups.get(lCount).xSize();
+            if (lSize > lMax){
+                lMax = lSize;
+            }
+        }
+        mMaxValue = lMax;
+        sGroupBorders();
+    }
+
     void xStartSetUp(int pRows, int pColumns, int pMaxValue) {
         mGameStatus = cStatusSetupGroups;
         mRows = pRows;
         mColumns = pColumns;
         mMaxValue = pMaxValue;
         mSetupTaken = 0;
+        mGroups.clear();
         mPlayField = new PlayField(mRows * mColumns);
     }
 
-    void xFinishSetup(){
+    boolean xFinishSetup(){
         Cell lCell;
         int lCount;
+        boolean lResult;
 
-        if (sCheckGame()){
+        lResult = sCheckGame();
+        if (lResult){
             for (lCount = 0; lCount < mRows * mColumns; lCount++){
                 lCell = mPlayField.xCell(lCount);
                 if (lCell.xValue() > 0){
@@ -287,13 +353,19 @@ class SuguruGame {
                 lCell.xSetupTaken(false);
                 lCell.xSetupSel(false);
             }
-            mGameStatus = cStatusPlay;
         }
+        return lResult;
+    }
+
+    void xStartGame() {
+        mGameStatus = cStatusPlay;
+        xResetUsedTime();
     }
 
     void xReset(){
         mPlayField.xResetField();
         mGameStatus = cStatusPlay;
+        mUsedTime = 0;
     }
 
     void xProcessDigit(int pDigit) {
@@ -481,5 +553,23 @@ class SuguruGame {
             }
         }
         return lResult;
+    }
+
+    String xGameBasic(){
+        StringBuilder lResult;
+        int lCount;
+        Cell lCell;
+
+        lResult = new StringBuilder();
+        for (lCount = 0; lCount < mRows * mColumns; lCount++){
+            lCell = mPlayField.xCell(lCount);
+            if (lCell.xFixed()){
+                lResult.append(String.format("%01d", lCell.xValue()));
+            } else {
+                lResult.append("0");
+            }
+            lResult.append(String.format("%02d", lCell.xGroup()));
+        }
+        return lResult.toString();
     }
 }
