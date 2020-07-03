@@ -14,6 +14,8 @@ import android.widget.Toast;
 import com.jakewharton.threetenabp.AndroidThreeTen;
 import org.threeten.bp.Instant;
 
+import java.util.List;
+
 public class MainSuguru extends Activity {
     private final Context mContext = this;
     private SuguruGame mGame;
@@ -131,6 +133,72 @@ public class MainSuguru extends Activity {
     public boolean onCreateOptionsMenu(Menu pMenu) {
         super.onCreateOptionsMenu(pMenu);
         getMenuInflater().inflate(R.menu.suguru_menu, pMenu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu pMenu) {
+        super.onPrepareOptionsMenu(pMenu);
+
+        List<PlayField> lFields;
+
+        MenuItem lMnuNew;
+        MenuItem lMnuSetup;
+        MenuItem lMnuSetupStart;
+        MenuItem lMnuSetupFinish;
+        MenuItem lMnuStore;
+        MenuItem lMnuPencil;
+
+        lMnuNew = pMenu.findItem(R.id.mnuNew);
+        lMnuSetup = pMenu.findItem(R.id.mnuSetup);
+        lMnuSetupStart = pMenu.findItem(R.id.mnuSetupStart);
+        lMnuSetupFinish = pMenu.findItem(R.id.mnuSetupFinish);
+        lMnuStore = pMenu.findItem(R.id.mnuStore);
+        lMnuPencil = pMenu.findItem(R.id.mnuPencil);
+
+        lMnuNew.setEnabled(true);
+        lMnuSetup.setEnabled(true);
+        lMnuSetupStart.setEnabled(true);
+        switch (mGame.xGameStatus()){
+            case SuguruGame.cStatusSetupGroups:{
+                lMnuSetupFinish.setEnabled(false);
+                lMnuStore.setEnabled(false);
+                lMnuPencil.setEnabled(false);
+                break;
+            }
+            case SuguruGame.cStatusSetupValues:{
+                lMnuSetupFinish.setEnabled(true);
+                lMnuStore.setEnabled(false);
+                lMnuPencil.setEnabled(false);
+                break;
+            }
+            case SuguruGame.cStatusPlay:{
+                lMnuSetupFinish.setEnabled(false);
+                if (mGame.xLib()){
+                    lMnuStore.setEnabled(false);
+                } else {
+                    lMnuStore.setEnabled(true);
+                }
+                lMnuPencil.setEnabled(true);
+                break;
+            }
+            case SuguruGame.cStatusSolved:{
+                lMnuSetupFinish.setEnabled(false);
+                if (mGame.xLib()){
+                    lMnuStore.setEnabled(false);
+                } else {
+                    lMnuStore.setEnabled(true);
+                }
+                lMnuPencil.setEnabled(false);
+                break;
+            }
+            default:{
+                lMnuSetupFinish.setEnabled(false);
+                lMnuStore.setEnabled(false);
+                lMnuPencil.setEnabled(false);
+                break;
+            }
+        }
         return true;
     }
 
@@ -256,6 +324,7 @@ public class MainSuguru extends Activity {
 
     private void sStore(int pLevel) {
         mData.xLibGame(mGame,  pLevel);
+        mGame.xToLib();
         Toast.makeText(mContext, R.string.msg_game_stored, Toast.LENGTH_SHORT).show();
     }
 

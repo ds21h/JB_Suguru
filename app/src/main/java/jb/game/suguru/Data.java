@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.security.keystore.StrongBoxUnavailableException;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -94,6 +95,7 @@ class Data extends SQLiteOpenHelper {
                         "MaxValue Integer Not Null, " +
                         "Status Integer Not Null, " +
                         "Difficulty Integer Not Null, " +
+                        "Lib Integer Not Null, " +
                         "SelectedField Integer Not Null, " +
                         "UsedTime Integer Not Null" +
                         ")"
@@ -103,9 +105,9 @@ class Data extends SQLiteOpenHelper {
     private void sInitGame(SQLiteDatabase pDB) {
         pDB.execSQL(
                 "INSERT INTO SuguruGame " +
-                        "(ContextId, Rows, Columns, MaxValue, Status, Difficulty, SelectedField, UsedTime) " +
+                        "(ContextId, Rows, Columns, MaxValue, Status, Difficulty, Lib, SelectedField, UsedTime) " +
                         "VALUES " +
-                        "('Suguru', 5, 5, 5, 0, 0, -1, 0)"
+                        "('Suguru', 5, 5, 5, 0, 0, 0, -1, 0)"
         );
     }
 
@@ -246,6 +248,7 @@ class Data extends SQLiteOpenHelper {
         lValues.put("MaxValue", pGame.xMaxValue());
         lValues.put("Status", pGame.xGameStatus());
         lValues.put("Difficulty", 0);
+        lValues.put("Lib", (pGame.xLib()) ? 1 : 0);
         lValues.put("SelectedField", 0);
         lValues.put("UsedTime", pGame.xUsedTime());
         lSelection = "ContextId = ?";
@@ -288,11 +291,12 @@ class Data extends SQLiteOpenHelper {
         int lMaxValue = 0;
         int lStatus = 0;
         int lDifficulty = -1;
+        int lLib = 0;
         int lSelectedField = 0;
         int lUsedTime = 0;
 
         lDB = this.getReadableDatabase();
-        lColumns = new String[]{"Rows", "Columns", "MaxValue", "Status", "Difficulty", "SelectedField", "UsedTime"};
+        lColumns = new String[]{"Rows", "Columns", "MaxValue", "Status", "Difficulty", "Lib", "SelectedField", "UsedTime"};
         lSelection = "ContextId = ?";
         lSelectionArgs = new String[]{"Suguru"};
 
@@ -304,8 +308,9 @@ class Data extends SQLiteOpenHelper {
                 lMaxValue = lCursor.getInt(2);
                 lStatus = lCursor.getInt(3);
                 lDifficulty = lCursor.getInt(4);
-                lSelectedField = lCursor.getInt(5);
-                lUsedTime = lCursor.getInt(6);
+                lLib = lCursor.getInt(5);
+                lSelectedField = lCursor.getInt(6);
+                lUsedTime = lCursor.getInt(7);
             }
             lCursor.close();
         } catch (Exception ignored) { }
@@ -315,7 +320,7 @@ class Data extends SQLiteOpenHelper {
 
         lDB.close();
 
-        lGame = new SuguruGame(lGroups, lFields, lGameRows, lGameColumns, lMaxValue, lStatus, lDifficulty, lSelectedField, lUsedTime);
+        lGame = new SuguruGame(lGroups, lFields, lGameRows, lGameColumns, lMaxValue, lStatus, lDifficulty, (lLib == 0) ? false : true, lSelectedField, lUsedTime);
         return lGame;
     }
 

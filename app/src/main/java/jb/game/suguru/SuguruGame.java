@@ -20,6 +20,7 @@ class SuguruGame {
     private int mUsedTime;
     private Group mSetupGroup;
     private int mSetupTaken;
+    private boolean mLib;
 
     SuguruGame(){
         mGameStatus = cStatusNone;
@@ -30,10 +31,11 @@ class SuguruGame {
         mPlayField = new PlayField(mRows * mColumns);
         mGroups = new ArrayList<>();
         mUsedTime = 0;
+        mLib = false;
     }
 
     SuguruGame(List<Group> pGroups, List<PlayField> pFields, int pGameRows, int pGameColumns,
-               int pMaxValue, int pStatus, int pDifficulty, int pSelectedField, int pUsedTime){
+               int pMaxValue, int pStatus, int pDifficulty, boolean pLib, int pSelectedField, int pUsedTime){
         int lCellCount;
 
         mRows = pGameRows;
@@ -61,6 +63,7 @@ class SuguruGame {
             }
         }
         mUsedTime = pUsedTime;
+        mLib = pLib;
     }
 
     private void sGroupBorders(){
@@ -126,6 +129,14 @@ class SuguruGame {
 
     void xPencilFlip(){
         mPlayField.xPencilFlip();
+    }
+
+    boolean xLib(){
+        return mLib;
+    }
+
+    void xToLib(){
+        mLib = true;
     }
 
     boolean xShowGroupButton(){
@@ -317,6 +328,7 @@ class SuguruGame {
             lGroup.xAdd(lCount);
             lCell.xGroup(lValue);
         }
+        mPlayField.xSetFilledCells();
         lMax = 0;
         for (lCount = 0; lCount < mGroups.size(); lCount++) {
             lSize = mGroups.get(lCount).xSize();
@@ -326,6 +338,7 @@ class SuguruGame {
         }
         mMaxValue = lMax;
         sGroupBorders();
+        mLib = true;
     }
 
     void xStartSetUp(int pRows, int pColumns, int pMaxValue) {
@@ -354,6 +367,7 @@ class SuguruGame {
                 lCell.xSetupSel(false);
             }
         }
+        mLib = false;
         return lResult;
     }
 
@@ -381,6 +395,7 @@ class SuguruGame {
                 if (!lCell.xFixed()) {
                     if (mPlayField.xSetSelectedCellValue(pDigit)){
                         if (sCheckGame()){
+                            int a = 1;
                             sAdjustGroup(mPlayField.xSelection(), pDigit);
                             sAdjustSurr(mPlayField.xSelection(), pDigit);
                             if (mPlayField.xFieldFull()){
@@ -483,7 +498,9 @@ class SuguruGame {
         for (lRow = 0; lRow < mRows; lRow++){
             for (lColumn = 0; lColumn < mColumns; lColumn++){
                 if (mPlayField.xCell(lCellNr).xValue() > 0){
-                    lResult = sTestGroup(lCellNr);
+                    if (!sTestGroup(lCellNr)){
+                        lResult = false;
+                    }
                     if (!sTestSurr(lRow, lColumn)){
                         lResult = false;
                     }

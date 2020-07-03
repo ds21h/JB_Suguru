@@ -21,12 +21,20 @@ class PlayField {
     }
 
     PlayField(int pFieldId, Cell[] pCells, int pSelection, boolean pPencil) {
-        int lCount;
-
         mFieldId = pFieldId;
         mCells = pCells;
         mPencilMode = pPencil;
         mSelection = pSelection;
+        sCountFilledCells();
+    }
+
+    void xSetFilledCells(){
+        sCountFilledCells();
+    }
+
+    private void sCountFilledCells(){
+        int lCount;
+
         mFilledCells = 0;
         for (lCount = 0; lCount < mCells.length; lCount++){
             if (mCells[lCount].xValue() != 0){
@@ -98,8 +106,10 @@ class PlayField {
             mFilledCells--;
             lValueSet = false;
         } else {
+            if (lCell.xValue() == 0){
+                mFilledCells++;
+            }
             lCell.xValue(pValue);
-            mFilledCells++;
             lValueSet = true;
         }
         return lValueSet;
