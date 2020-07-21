@@ -150,10 +150,7 @@ class SuguruGame {
     void xStoreGroup(){
         int lCount;
         int lCellNr;
-        int lRow;
-        int lColumn;
         boolean lGroupOK;
-        boolean lCellOK;
         Cell lCell;
 
         mPlayField.xResetConflicts();
@@ -259,18 +256,20 @@ class SuguruGame {
 
         lCellNr = pRow * mColumns + pColumn;
         if (mGameStatus == cStatusSetupGroups){
-            mPlayField.xCell(lCellNr).xConflict(false);
-            if (mSetupGroup == null){
-                mSetupGroup = new Group();
-            }
-            if (mSetupGroup.xContains(lCellNr)){
-                if (mSetupGroup.xDelete(lCellNr)){
-                    mPlayField.xCell(lCellNr).xSetupSel(false);
+            if (!mPlayField.xCell(lCellNr).xSetupTaken()){
+                mPlayField.xCell(lCellNr).xConflict(false);
+                if (mSetupGroup == null){
+                    mSetupGroup = new Group();
                 }
-            } else {
-                if (mSetupGroup.xSize() < mMaxValue){
-                    if (mSetupGroup.xAdd(lCellNr)){
-                        mPlayField.xCell(lCellNr).xSetupSel(true);
+                if (mSetupGroup.xContains(lCellNr)){
+                    if (mSetupGroup.xDelete(lCellNr)){
+                        mPlayField.xCell(lCellNr).xSetupSel(false);
+                    }
+                } else {
+                    if (mSetupGroup.xSize() < mMaxValue){
+                        if (mSetupGroup.xAdd(lCellNr)){
+                            mPlayField.xCell(lCellNr).xSetupSel(true);
+                        }
                     }
                 }
             }
@@ -395,7 +394,6 @@ class SuguruGame {
                 if (!lCell.xFixed()) {
                     if (mPlayField.xSetSelectedCellValue(pDigit)){
                         if (sCheckGame()){
-                            int a = 1;
                             sAdjustGroup(mPlayField.xSelection(), pDigit);
                             sAdjustSurr(mPlayField.xSelection(), pDigit);
                             if (mPlayField.xFieldFull()){

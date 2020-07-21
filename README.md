@@ -9,6 +9,11 @@ If you have any questions or remarks please send me a mail on ds21h@hotmail.com
 
 History
 
+Version 0.91 - 21-07-2020
+    -   Corrected error in group composition (already taken cells were also allowed).
+    -   Corrected error in store function. Game was not marked as Lib.
+        This was caused by the fact that onActivityResult is executed before onResume.
+
 Version 0.9 - 03-07-2020
 -   First version
 -   Features:

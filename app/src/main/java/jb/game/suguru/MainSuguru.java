@@ -22,6 +22,7 @@ public class MainSuguru extends Activity {
     private Data mData;
     private SuguruView mSgrView;
     private Bundle mGameParams = null;
+    private Bundle mStoreParams = null;
     private long mStartTime;
 
     Handler mRefreshHandler = new Handler();
@@ -98,6 +99,7 @@ public class MainSuguru extends Activity {
         int lRows;
         int lColumns;
         int lMaxValue;
+        int lDifficulty;
 
         super.onResume();
 
@@ -115,6 +117,11 @@ public class MainSuguru extends Activity {
             lMaxValue = mGameParams.getInt(SelectGameParams.cMaxValue);
             mGameParams = null;
             sSetupStart(lRows, lColumns, lMaxValue);
+        }
+        if (mStoreParams != null){
+            lDifficulty = mStoreParams.getInt(SelectDifficulty.cLevel);
+            mStoreParams = null;
+            sStore(lDifficulty);
         }
     }
 
@@ -204,24 +211,14 @@ public class MainSuguru extends Activity {
 
     @Override
     protected void onActivityResult(int pRequest, int pResult, Intent pInt) {
-        Bundle lBundle;
-        int lDifficulty;
-
         if (pRequest == 1) {
             if (pResult == RESULT_OK) {
-                lBundle = pInt.getExtras();
-                if (lBundle != null) {
-                    mGameParams = lBundle;
-                }
+                mGameParams = pInt.getExtras();
             }
         } else {
             if (pRequest == 2){
                 if (pResult == RESULT_OK) {
-                    lBundle = pInt.getExtras();
-                    if (lBundle != null) {
-                        lDifficulty = lBundle.getInt(SelectDifficulty.cLevel);
-                        sStore(lDifficulty);
-                    }
+                    mStoreParams = pInt.getExtras();
                 }
             }
         }
@@ -323,8 +320,8 @@ public class MainSuguru extends Activity {
     }
 
     private void sStore(int pLevel) {
-        mData.xLibGame(mGame,  pLevel);
         mGame.xToLib();
+        mData.xLibGame(mGame,  pLevel);
         Toast.makeText(mContext, R.string.msg_game_stored, Toast.LENGTH_SHORT).show();
     }
 
