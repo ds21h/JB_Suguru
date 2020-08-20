@@ -54,11 +54,42 @@
         android:title="@string/mnu_pencil">
        <menu >
             <item
-                android:onClick="hFillPencil"
-                android:title="@string/mnu_pencil_fill" />
+                android:id="@+id/mnuPencilAuto"
+                android:checkable="true"
+                android:onClick="hAutoPencil"
+                android:title="@string/mnu_pencil_auto" />
+           <item
+               android:onClick="hFillPencil"
+               android:title="@string/mnu_pencil_fill" />
             <item
                 android:onClick="hClearPencil"
                 android:title="@string/mnu_pencil_clear" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/mnuFields"
+        android:title="@string/mnu_fields" >
+        <menu>
+            <item
+                android:onClick="hFieldCopy"
+                android:title="@string/mnu_field_copy" />
+            <item
+                android:id="@+id/mnuSwitch"
+                android:onClick="hFieldSwitch"
+                android:title="@string/mnu_field_switch" />
+            <item
+                android:id="@+id/mnuDelete"
+                android:onClick="hFieldDelete"
+                android:title="@string/mnu_field_delete" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/mnuLib"
+        android:title="@string/mnu_lib">
+        <menu >
+            <item
+                android:onClick="hImport"
+                android:title="@string/mnu_import" />
         </menu>
     </item>
 </menu>

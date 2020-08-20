@@ -138,7 +138,7 @@ public class SuguruView extends View {
         if (mGame != null){
             mButtonSize = (getWidth() / (float)(mGame.xMaxValue() + 2)) - (2 * cButtonMargin);
             lCellHor = (getWidth() - (2 * cMargin)) / (float)mGame.xColumns();
-            lCellVert = (getHeight() - cMargin - (3 * cButtonMargin) - mButtonSize) / (float)(mGame.xRows());
+            lCellVert = (getHeight() - cMargin - (3 * cButtonMargin) - mButtonSize) / ((float)(mGame.xRows() + 0.5F));
             if (lCellHor < lCellVert){
                 mCellSize = lCellHor;
                 mMargin = cMargin;
@@ -166,7 +166,6 @@ public class SuguruView extends View {
         int lColumn;
         int lPencilRow;
         int lPencilColumn;
-        int lPencilPos;
         float lRowMargin;
         float lColumnMargin;
         RectF lRect;
@@ -248,18 +247,6 @@ public class SuguruView extends View {
                             if (lCell.xPencil(lPencil)) {
                                 pCanvas.drawText(String.valueOf(lPencil), lRect.left + (lPencilColumn * lPencilCellSize) + (lPencilCellSize / 2), lRect.top + ((lPencilRow + 1) * lPencilCellSize) - (mPaint.getFontMetrics().descent / 2), mPaint);
                             }
-
-/*                            lPencilPos = (lPencilRow * 3) + lPencilColumn;
-                            lPencil = lPencilPos / 2;
-                            if (lPencilPos == (lPencil * 2)){
-                                lPencil++;
-                                if (lCell.xPencil(lPencil)) {
-                                    pCanvas.drawText(String.valueOf(lPencil),
-                                            lRect.left + (lPencilColumn * lPencilCellSize) + (lPencilCellSize / 2),
-                                            lRect.top + ((lPencilRow + 1) * lPencilCellSize) - (mPaint.getFontMetrics().descent / 2),
-                                            mPaint);
-                                }
-                            } */
                         }
                     }
                 }
@@ -295,6 +282,16 @@ public class SuguruView extends View {
                 }
                 pCanvas.drawLine(lColumnMargin, lRowMargin + mCellSize, lColumnMargin + mCellSize, lRowMargin + mCellSize, mPaint);
             }
+        }
+        if (mGame.xFieldCount() > 1){
+            mPaint.setStrokeWidth(cStrokeNarrow);
+            mPaint.setStyle(Paint.Style.FILL);
+            mPaint.setTextSize(mCellSize * 0.4F);
+            mPaint.setTextAlign(Paint.Align.RIGHT);
+            mPaint.setColor(cColorForeNorm);
+            mPaint.setAlpha(lAlpha);
+            pCanvas.drawText(String.valueOf(mGame.xPlayField().xFieldId()), cMargin + (mCellSize * mGame.xColumns()),  (mCellSize * mGame.xRows()) - mPaint.getFontMetrics().top + (cMargin * 2), mPaint);
+            mPaint.setTextAlign(Paint.Align.CENTER);
         }
     }
 

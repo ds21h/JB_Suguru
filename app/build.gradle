@@ -8,8 +8,8 @@ android {
         applicationId "jb.game.suguru"
         minSdkVersion 17
         targetSdkVersion 29
-        versionCode 90
-        versionName "0.9"
+        versionCode 93
+        versionName "0.93"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

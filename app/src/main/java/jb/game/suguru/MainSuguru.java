@@ -2,18 +2,29 @@ package jb.game.suguru;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import com.jakewharton.threetenabp.AndroidThreeTen;
+
 import org.threeten.bp.Instant;
 
+import java.io.File;
+import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 public class MainSuguru extends Activity {
@@ -23,7 +34,9 @@ public class MainSuguru extends Activity {
     private SuguruView mSgrView;
     private Bundle mGameParams = null;
     private Bundle mStoreParams = null;
+    private Uri mLoadUri = null;
     private long mStartTime;
+    private volatile boolean mLoadActive;
 
     Handler mRefreshHandler = new Handler();
     Runnable mRefreshRunnable = new Runnable() {
@@ -92,6 +105,17 @@ public class MainSuguru extends Activity {
                 Toast.makeText(mContext, R.string.msg_solved, Toast.LENGTH_SHORT).show();
             }
         });
+        if (savedInstanceState == null) {
+            mLoadActive = false;
+        } else {
+            mLoadActive = savedInstanceState.getBoolean("LoadActive");
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putBoolean("LoadActive", mLoadActive);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -111,14 +135,14 @@ public class MainSuguru extends Activity {
             mGame.xResetUsedTime();
         }
         mRefreshHandler.postDelayed(mRefreshRunnable, 10);
-        if (mGameParams != null){
+        if (mGameParams != null) {
             lRows = mGameParams.getInt(SelectGameParams.cRows);
             lColumns = mGameParams.getInt(SelectGameParams.cColumns);
             lMaxValue = mGameParams.getInt(SelectGameParams.cMaxValue);
             mGameParams = null;
             sSetupStart(lRows, lColumns, lMaxValue);
         }
-        if (mStoreParams != null){
+        if (mStoreParams != null) {
             lDifficulty = mStoreParams.getInt(SelectDifficulty.cLevel);
             mStoreParams = null;
             sStore(lDifficulty);
@@ -155,6 +179,9 @@ public class MainSuguru extends Activity {
         MenuItem lMnuSetupFinish;
         MenuItem lMnuStore;
         MenuItem lMnuPencil;
+        MenuItem lMnuPencilAuto;
+        MenuItem lMnuPlayField;
+        MenuItem lMnuLibrary;
 
         lMnuNew = pMenu.findItem(R.id.mnuNew);
         lMnuSetup = pMenu.findItem(R.id.mnuSetup);
@@ -162,47 +189,57 @@ public class MainSuguru extends Activity {
         lMnuSetupFinish = pMenu.findItem(R.id.mnuSetupFinish);
         lMnuStore = pMenu.findItem(R.id.mnuStore);
         lMnuPencil = pMenu.findItem(R.id.mnuPencil);
+        lMnuPencilAuto = pMenu.findItem(R.id.mnuPencilAuto);
+        lMnuPlayField = pMenu.findItem(R.id.mnuFields);
+        lMnuLibrary = pMenu.findItem(R.id.mnuLib);
 
         lMnuNew.setEnabled(true);
         lMnuSetup.setEnabled(true);
         lMnuSetupStart.setEnabled(true);
-        switch (mGame.xGameStatus()){
-            case SuguruGame.cStatusSetupGroups:{
+        lMnuLibrary.setEnabled(!mLoadActive);
+        switch (mGame.xGameStatus()) {
+            case SuguruGame.cStatusSetupGroups: {
                 lMnuSetupFinish.setEnabled(false);
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
+                lMnuPlayField.setEnabled(false);
                 break;
             }
-            case SuguruGame.cStatusSetupValues:{
+            case SuguruGame.cStatusSetupValues: {
                 lMnuSetupFinish.setEnabled(true);
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
+                lMnuPlayField.setEnabled(false);
                 break;
             }
-            case SuguruGame.cStatusPlay:{
+            case SuguruGame.cStatusPlay: {
                 lMnuSetupFinish.setEnabled(false);
-                if (mGame.xLib()){
+                if (mGame.xLib()) {
                     lMnuStore.setEnabled(false);
                 } else {
                     lMnuStore.setEnabled(true);
                 }
                 lMnuPencil.setEnabled(true);
+                lMnuPencilAuto.setChecked(mGame.xPencilAuto());
+                lMnuPlayField.setEnabled(true);
                 break;
             }
-            case SuguruGame.cStatusSolved:{
+            case SuguruGame.cStatusSolved: {
                 lMnuSetupFinish.setEnabled(false);
-                if (mGame.xLib()){
+                if (mGame.xLib()) {
                     lMnuStore.setEnabled(false);
                 } else {
                     lMnuStore.setEnabled(true);
                 }
                 lMnuPencil.setEnabled(false);
+                lMnuPlayField.setEnabled(false);
                 break;
             }
-            default:{
+            default: {
                 lMnuSetupFinish.setEnabled(false);
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
+                lMnuPlayField.setEnabled(false);
                 break;
             }
         }
@@ -211,17 +248,30 @@ public class MainSuguru extends Activity {
 
     @Override
     protected void onActivityResult(int pRequest, int pResult, Intent pInt) {
-        if (pRequest == 1) {
-            if (pResult == RESULT_OK) {
-                mGameParams = pInt.getExtras();
-            }
-        } else {
-            if (pRequest == 2){
-                if (pResult == RESULT_OK) {
+        Uri lUri;
+        ImportLib lImportRunnable;
+        Thread lAsync;
+
+        if (pResult == RESULT_OK) {
+            switch (pRequest) {
+                case 1:
+                    mGameParams = pInt.getExtras();
+                    break;
+                case 2:
                     mStoreParams = pInt.getExtras();
-                }
+                    break;
+                case 3:
+                    lUri = pInt.getData();
+                    lImportRunnable = new ImportLib(this, this.getApplicationContext(), lUri);
+                    lAsync = new Thread(lImportRunnable);
+                    lAsync.start();
+                    break;
             }
         }
+    }
+
+    void xFinishImport(){
+        mLoadActive = false;
     }
 
     private void sSetStartTime() {
@@ -231,11 +281,11 @@ public class MainSuguru extends Activity {
         mStartTime = lInstant.getEpochSecond();
     }
 
-    private void sSaveUsedTime(){
+    private void sSaveUsedTime() {
         Instant lInstant;
 
         lInstant = Instant.now();
-        mGame.xAddUsedTime((int)(lInstant.getEpochSecond() - mStartTime));
+        mGame.xAddUsedTime((int) (lInstant.getEpochSecond() - mStartTime));
     }
 
     public void hNew(MenuItem pItem) {
@@ -244,7 +294,7 @@ public class MainSuguru extends Activity {
         LibGame lLibGame;
 
         lItem = pItem.getItemId();
-        switch (lItem){
+        switch (lItem) {
             case R.id.mnuNewVE:
                 lDifficulty = 1;
                 break;
@@ -265,7 +315,10 @@ public class MainSuguru extends Activity {
                 break;
         }
         lLibGame = mData.xRandomLibGame(lDifficulty);
-        if (lLibGame != null){
+        if (lLibGame == null) {
+            Toast.makeText(mContext, R.string.msg_not_found, Toast.LENGTH_SHORT).show();
+        } else {
+            mData.xDeleteSave();
             mGame.xNewGame(lLibGame);
             sStartGame();
         }
@@ -285,14 +338,14 @@ public class MainSuguru extends Activity {
         startActivityForResult(lInt, 1);
     }
 
-    private void sSetupStart(int pRows, int pColumns, int pMaxValue){
+    private void sSetupStart(int pRows, int pColumns, int pMaxValue) {
         mData.xDeleteSave();
         mGame.xStartSetUp(pRows, pColumns, pMaxValue);
         mSgrView.invalidate();
     }
 
     public void hSetupFinish(MenuItem pItem) {
-        if (mGame.xFinishSetup()){
+        if (mGame.xFinishSetup()) {
             sStartGame();
         }
         mSgrView.invalidate();
@@ -306,6 +359,7 @@ public class MainSuguru extends Activity {
     }
 
     public void hReset(MenuItem pItem) {
+        mData.xDeleteSave();
         sSetStartTime();
         mGame.xReset();
         mSgrView.invalidate();
@@ -321,17 +375,85 @@ public class MainSuguru extends Activity {
 
     private void sStore(int pLevel) {
         mGame.xToLib();
-        mData.xLibGame(mGame,  pLevel);
+        mData.xLibGame(mGame, pLevel);
         Toast.makeText(mContext, R.string.msg_game_stored, Toast.LENGTH_SHORT).show();
     }
 
-    public void hFillPencil(MenuItem pItem){
+    public void hAutoPencil(MenuItem pItem) {
+        mGame.xFlipPencilAuto();
+//        mSgrView.invalidate();
+    }
+
+    public void hFillPencil(MenuItem pItem) {
         mGame.xFillPencil();
         mSgrView.invalidate();
     }
 
-    public void hClearPencil(MenuItem pItem){
+    public void hClearPencil(MenuItem pItem) {
         mGame.xClearPencil();
         mSgrView.invalidate();
+    }
+
+    public void hFieldCopy(MenuItem pItem) {
+        mData.xSavePlayField(mGame.xPlayField());
+        mGame.xPlayFieldCopy();
+        mSgrView.invalidate();
+    }
+
+    public void hFieldSwitch(MenuItem pItem) {
+        AlertDialog lDialog;
+        AlertDialog.Builder lBuilder;
+        final String[] lItems;
+        List<PlayField> lFields;
+        int lCountIn;
+        int lCountOut;
+        int lId;
+
+        lFields = mGame.xPlayFields();
+        lItems = new String[lFields.size() - 1];
+
+        lCountOut = 0;
+        for (lCountIn = 0; lCountIn < lFields.size(); lCountIn++){
+            lId = lFields.get(lCountIn).xFieldId();
+            if (lId != mGame.xPlayField().xFieldId()){
+                lItems[lCountOut] = String.valueOf(lId);
+                lCountOut++;
+            }
+        }
+        if (lItems.length > 1){
+            lBuilder = new AlertDialog.Builder(this);
+            lBuilder.setItems(lItems, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int pChoice) {
+                    sSwitchPlayField(Integer.parseInt(lItems[pChoice]));
+                }
+            });
+            lDialog = lBuilder.create();
+            lDialog.show();
+        } else {
+            sSwitchPlayField(Integer.parseInt(lItems[0]));
+        }
+    }
+
+    private void sSwitchPlayField(int pNewId){
+        mData.xSavePlayField(mGame.xPlayField());
+        mGame.xSwitchPlayField(pNewId);
+        mSgrView.invalidate();
+    }
+
+    public void hFieldDelete(MenuItem pItem) {
+        mData.xDeletePlayField(mGame.xPlayField().xFieldId());
+        mGame.xDeleteCurrentPlayField();
+        mSgrView.invalidate();
+    }
+
+    public void hImport(MenuItem pItem) {
+        Intent lIntent;
+
+        lIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        lIntent.addCategory(Intent.CATEGORY_OPENABLE);
+        lIntent.setType("application/sgl");
+
+        startActivityForResult(lIntent, 3);
     }
 }

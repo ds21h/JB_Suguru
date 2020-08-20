@@ -4,6 +4,7 @@ class PlayField {
     private int mFieldId;
     private Cell[] mCells;
     private boolean mPencilMode;
+    private boolean mPencilAuto;
     private int mSelection;
     private int mFilledCells;
 
@@ -16,16 +17,32 @@ class PlayField {
             mCells[lCount] = new Cell();
         }
         mPencilMode = false;
+        mPencilAuto = true;
         mSelection = 0;
         mFilledCells = 0;
     }
 
-    PlayField(int pFieldId, Cell[] pCells, int pSelection, boolean pPencil) {
+    PlayField(int pFieldId, Cell[] pCells, int pSelection, boolean pPencil, boolean pPencilAuto) {
         mFieldId = pFieldId;
         mCells = pCells;
         mPencilMode = pPencil;
+        mPencilAuto = pPencilAuto;
         mSelection = pSelection;
         sCountFilledCells();
+    }
+
+    PlayField(int pFieldId, PlayField pField){
+        int lCount;
+
+        mFieldId = pFieldId;
+        mCells = new Cell[pField.mCells.length];
+        for (lCount = 0; lCount < mCells.length; lCount++) {
+            mCells[lCount] = new Cell(pField.mCells[lCount]);
+        }
+        mPencilMode = pField.mPencilMode;
+        mPencilAuto = pField.mPencilAuto;
+        mSelection = pField.mSelection;
+        mFilledCells = pField.mFilledCells;
     }
 
     void xSetFilledCells(){
@@ -67,8 +84,27 @@ class PlayField {
         return mPencilMode;
     }
 
+    boolean xPencilAuto(){
+        return mPencilAuto;
+    }
+
+    void xFlipPencilAuto(){
+        mPencilAuto = !mPencilAuto;
+    }
+
     void xPencilFlip() {
         mPencilMode = !mPencilMode;
+    }
+
+
+    void xClearPencil(){
+        int lCount;
+        Cell lCell;
+
+        for (lCount = 0; lCount < mCells.length; lCount++){
+            lCell = mCells[lCount];
+            lCell.xClearPencils();
+        }
     }
 
     Cell xSelectedCell() {

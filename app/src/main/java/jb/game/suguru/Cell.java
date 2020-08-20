@@ -1,5 +1,7 @@
 package jb.game.suguru;
 
+import java.util.Arrays;
+
 class Cell {
     private int mMaxValue;
     private int mGroup;
@@ -43,6 +45,21 @@ class Cell {
         }
     }
 
+    Cell(Cell pCell){
+        mMaxValue = pCell.mMaxValue;
+        mGroup = pCell.mGroup;
+        mBndLeft = pCell.mBndLeft;
+        mBndRight = pCell.mBndRight;
+        mBndTop = pCell.mBndTop;
+        mBndBottom = pCell.mBndBottom;
+        mValue = pCell.mValue;
+        mFixed = pCell.mFixed;
+        mConflict = pCell.mConflict;
+        mSetupSel = pCell.mSetupSel;
+        mSetupTaken = pCell.mSetupTaken;
+        mPencil = Arrays.copyOf(pCell.mPencil, pCell.mPencil.length);
+    }
+
     void xFullReset(){
         sFullReset();
     }
@@ -74,26 +91,6 @@ class Cell {
         for (lCount = 0; lCount < mPencil.length; lCount++) {
             mPencil[lCount] = false;
         }
-    }
-
-    Cell(Cell pCell){
-        sSetCell(pCell );
-    }
-
-    void xSetCell(Cell pCell){
-        sSetCell(pCell );
-    }
-
-    void sSetCell(Cell pCell){
-        mGroup = pCell.mGroup;
-        mBndLeft = pCell.mBndLeft;
-        mBndRight = pCell.mBndRight;
-        mBndTop = pCell.mBndTop;
-        mBndBottom = pCell.mBndBottom;
-        mValue = pCell.mValue;
-        mFixed = pCell.mFixed;
-        mSetupSel = pCell.mSetupSel;
-        mSetupTaken = pCell.mSetupTaken;
     }
 
     int xGroup(){
