@@ -21,7 +21,10 @@ class SuguruGame {
     private int mUsedTime;
     private Group mSetupGroup;
     private int mSetupTaken;
-    private boolean mLib;
+    private int mBatchId;
+    private int mGameId;
+    private int mDifficulty;
+    private boolean mLibSolved;
 
     SuguruGame(){
         mGameStatus = cStatusNone;
@@ -34,11 +37,14 @@ class SuguruGame {
         mPlayFields.add(mPlayField);
         mGroups = new ArrayList<>();
         mUsedTime = 0;
-        mLib = false;
+        mBatchId = -1;
+        mGameId = -1;
+        mDifficulty = 0;
+        mLibSolved = false;
     }
 
     SuguruGame(List<Group> pGroups, List<PlayField> pFields, int pGameRows, int pGameColumns,
-               int pMaxValue, int pStatus, int pDifficulty, boolean pLib, int pSelectedField, int pUsedTime){
+               int pMaxValue, int pStatus, int pDifficulty, boolean pLibSolved, int pBatchId, int pGameId, int pSelectedField, int pUsedTime){
         int lCellCount;
 
         mRows = pGameRows;
@@ -76,7 +82,10 @@ class SuguruGame {
             }
         }
         mUsedTime = pUsedTime;
-        mLib = pLib;
+        mBatchId = pBatchId;
+        mGameId = pGameId;
+        mDifficulty = pDifficulty;
+        mLibSolved = pLibSolved;
     }
 
     private void sGroupBorders(){
@@ -163,11 +172,44 @@ class SuguruGame {
     }
 
     boolean xLib(){
-        return mLib;
+        return mBatchId >= 0;
     }
 
-    void xToLib(){
-        mLib = true;
+    int xBatchId(){
+        return mBatchId;
+    }
+
+    int xGameId(){
+        return mGameId;
+    }
+
+    int xDifficulty(){
+        return mDifficulty;
+    }
+
+    void xChangeDifficulty(int pDifficulty){
+        mDifficulty = pDifficulty;
+        mLibSolved = false;
+    }
+
+    boolean xLibSolved(){
+        return mLibSolved;
+    }
+
+    boolean xSetLibSolved(){
+        boolean lResult;
+
+        lResult = mLibSolved;
+        mLibSolved = true;
+        return lResult;
+    }
+
+    void xToLib(int pGameId, int pDifficulty){
+        if (pGameId >= 0){
+            mBatchId = 0;
+            mGameId = pGameId;
+            mDifficulty = pDifficulty;
+        }
     }
 
     boolean xShowGroupButton(){
@@ -345,15 +387,6 @@ class SuguruGame {
         }
     }
 
- /*   void xGenerate(){
-        Generator lGenerator;
-
-        lGenerator = new Generator(mRows, mColumns);
-        lGenerator.xGenerate();
-        mPlayField = lGenerator.xPlayField();
-        mGroups = lGenerator.xGroups();
-    } */
-
     void xNewGame(LibGame pLibGame){
         int lCount;
         String lWork;
@@ -398,7 +431,10 @@ class SuguruGame {
         }
         mMaxValue = lMax;
         sGroupBorders();
-        mLib = true;
+        mBatchId = pLibGame.xBatchId();
+        mGameId = pLibGame.xGameId();
+        mDifficulty = pLibGame.xDifficulty();
+        mLibSolved = pLibGame.xSolved();
     }
 
     void xStartSetUp(int pRows, int pColumns, int pMaxValue) {
@@ -411,6 +447,9 @@ class SuguruGame {
         mPlayField = new PlayField(mRows * mColumns);
         mPlayFields.clear();
         mPlayFields.add(mPlayField);
+        mBatchId = -1;
+        mGameId = -1;
+        mLibSolved = false;
     }
 
     boolean xFinishSetup(){
@@ -429,7 +468,6 @@ class SuguruGame {
                 lCell.xSetupSel(false);
             }
         }
-        mLib = false;
         return lResult;
     }
 

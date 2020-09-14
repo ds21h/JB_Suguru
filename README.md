@@ -9,9 +9,15 @@ If you have any questions or remarks please send me a mail on ds21h@hotmail.com
 
 History
 
-Version 0.93 - 20-08-2020 (not yet published)
+Version 1.0 - 14-09-2020
     -   Introduced multiple playfields
     -   Auto pencil function can be turned off (per playfield)
+    -   Start game from lib can be set to only new games or all games
+    -   Difficulty of Libgame can be changed (then also game is reset to new)
+    -   Difficulty of libgame is displayed in header
+    -   Option "just take one" is added in start lib game
+    -   When auto pencil is enabled and a cellselection is changed or erased (not added!) all pencilentries are erased as they then become unreliable.
+    -   Minimal API level raised to 19 (Android 4.4). 
 
 Version 0.92 - 16-08-2020
     -   Corrected error in DB handling with new installation.

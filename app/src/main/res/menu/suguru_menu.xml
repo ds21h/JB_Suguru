@@ -6,6 +6,11 @@
         android:title="@string/mnu_game">
         <menu>
             <item
+                android:id="@+id/mnuSelectNew"
+                android:checkable="true"
+                android:onClick="hSelectNew"
+                android:title="@string/mnu_select_new" />
+            <item
                 android:id="@+id/mnuNewVE"
                 android:onClick="hNew"
                 android:title="@string/mnu_level_very_easy" />
@@ -25,6 +30,10 @@
                 android:id="@+id/mnuNewVH"
                 android:onClick="hNew"
                 android:title="@string/mnu_level_very_hard" />
+            <item
+                android:id="@+id/mnuNewUnd"
+                android:onClick="hNew"
+                android:title="@string/mnu_level_und" />
         </menu>
     </item>
     <item
@@ -90,6 +99,10 @@
             <item
                 android:onClick="hImport"
                 android:title="@string/mnu_import" />
+            <item
+                android:id="@+id/mnuChangeDiff"
+                android:onClick="hChangeDifficulty"
+                android:title="@string/mnu_change_difficulty" />
         </menu>
     </item>
 </menu>

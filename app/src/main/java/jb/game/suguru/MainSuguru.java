@@ -7,36 +7,37 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import com.jakewharton.threetenabp.AndroidThreeTen;
-
 import org.threeten.bp.Instant;
 
-import java.io.File;
-import java.io.InputStream;
-import java.lang.ref.WeakReference;
 import java.util.List;
 
 public class MainSuguru extends Activity {
+    private final int cReqSetup = 1;
+    private final int cReqStore = 2;
+    private final int cReqImport = 3;
+    private final int cReqChangeDiff = 4;
+
     private final Context mContext = this;
     private SuguruGame mGame;
     private Data mData;
     private SuguruView mSgrView;
     private Bundle mGameParams = null;
     private Bundle mStoreParams = null;
+    private Bundle mSelectDiffParams = null;
     private Uri mLoadUri = null;
     private long mStartTime;
     private volatile boolean mLoadActive;
+    private boolean mSelectNew;
+    private LibData mLibData;
+    private String mHeader;
 
     Handler mRefreshHandler = new Handler();
     Runnable mRefreshRunnable = new Runnable() {
@@ -58,7 +59,7 @@ public class MainSuguru extends Activity {
                     lElapsed = (int) (lNowTime - mStartTime);
                     lMinute = lElapsed / 60;
                     lSecond = lElapsed % 60;
-                    setTitle(getString(R.string.app_name) + String.format(" %02d:%02d", lMinute, lSecond));
+                    setTitle(mHeader + String.format(" %02d:%02d", lMinute, lSecond));
                     mRefreshHandler.postDelayed(this, 100);
                     break;
                 }
@@ -66,7 +67,7 @@ public class MainSuguru extends Activity {
                     lElapsed = mGame.xUsedTime();
                     lMinute = lElapsed / 60;
                     lSecond = lElapsed % 60;
-                    setTitle(getString(R.string.app_name) + String.format(" %02d:%02d", lMinute, lSecond));
+                    setTitle(mHeader + String.format(" %02d:%02d", lMinute, lSecond));
                     mRefreshHandler.postDelayed(this, 500);
                     break;
                 }
@@ -94,27 +95,44 @@ public class MainSuguru extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mainsuguru_layout);
 
+        String lLibData;
+        Thread lUpdate;
+
         mGame = new SuguruGame();
         mData = Data.getInstance(mContext);
+        mHeader = "";
         mSgrView = findViewById(R.id.svMain);
         mSgrView.setGame(mGame);
         mSgrView.setIntSuguruView(new SuguruView.intSuguruView() {
             @Override
             public void onSolved() {
+                if (mGame.xBatchId() >= 0){
+                    if (!mGame.xSetLibSolved()){
+                        mLibData.xSolved(mGame.xDifficulty());
+                    }
+                    mData.xLibGamePlayed(mGame.xBatchId(), mGame.xGameId());
+                }
                 sSaveUsedTime();
                 Toast.makeText(mContext, R.string.msg_solved, Toast.LENGTH_SHORT).show();
             }
         });
         if (savedInstanceState == null) {
             mLoadActive = false;
+            mSelectNew = true;
+            mLibData = new LibData(mContext);
         } else {
             mLoadActive = savedInstanceState.getBoolean("LoadActive");
+            mSelectNew = savedInstanceState.getBoolean("SelectNew");
+            lLibData = savedInstanceState.getString("LibData");
+            mLibData = new LibData(lLibData);
         }
     }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putBoolean("LoadActive", mLoadActive);
+        outState.putBoolean("SelectNew", mSelectNew);
+        outState.putString("LibData", mLibData.xLibData());
         super.onSaveInstanceState(outState);
     }
 
@@ -129,6 +147,7 @@ public class MainSuguru extends Activity {
 
         mGame = mData.xCurrentGame();
         mSgrView.setGame(mGame);
+        sSetHeader();
         if (mGame.xGameStatus() == SuguruGame.cStatusPlay) {
             sSetStartTime();
             mStartTime -= mGame.xUsedTime();
@@ -146,6 +165,11 @@ public class MainSuguru extends Activity {
             lDifficulty = mStoreParams.getInt(SelectDifficulty.cLevel);
             mStoreParams = null;
             sStore(lDifficulty);
+        }
+        if (mSelectDiffParams != null) {
+            lDifficulty = mSelectDiffParams.getInt(SelectDifficulty.cLevel);
+            mSelectDiffParams = null;
+            sChangeDifficulty(lDifficulty);
         }
     }
 
@@ -174,6 +198,12 @@ public class MainSuguru extends Activity {
         List<PlayField> lFields;
 
         MenuItem lMnuNew;
+        MenuItem lMenuVE;
+        MenuItem lMenuE;
+        MenuItem lMenuM;
+        MenuItem lMenuH;
+        MenuItem lMenuVH;
+        MenuItem lMnuSelectNew;
         MenuItem lMnuSetup;
         MenuItem lMnuSetupStart;
         MenuItem lMnuSetupFinish;
@@ -182,8 +212,15 @@ public class MainSuguru extends Activity {
         MenuItem lMnuPencilAuto;
         MenuItem lMnuPlayField;
         MenuItem lMnuLibrary;
+        MenuItem lMnuChangeDiff;
 
         lMnuNew = pMenu.findItem(R.id.mnuNew);
+        lMenuVE = pMenu.findItem(R.id.mnuNewVE);
+        lMenuE = pMenu.findItem(R.id.mnuNewE);
+        lMenuM = pMenu.findItem(R.id.mnuNewM);
+        lMenuH = pMenu.findItem(R.id.mnuNewH);
+        lMenuVH = pMenu.findItem(R.id.mnuNewVH);
+        lMnuSelectNew = pMenu.findItem(R.id.mnuSelectNew);
         lMnuSetup = pMenu.findItem(R.id.mnuSetup);
         lMnuSetupStart = pMenu.findItem(R.id.mnuSetupStart);
         lMnuSetupFinish = pMenu.findItem(R.id.mnuSetupFinish);
@@ -192,17 +229,26 @@ public class MainSuguru extends Activity {
         lMnuPencilAuto = pMenu.findItem(R.id.mnuPencilAuto);
         lMnuPlayField = pMenu.findItem(R.id.mnuFields);
         lMnuLibrary = pMenu.findItem(R.id.mnuLib);
+        lMnuChangeDiff = pMenu.findItem(R.id.mnuChangeDiff);
 
         lMnuNew.setEnabled(true);
+        lMenuVE.setTitle(getString(R.string.mnu_level_very_easy) + " (" + mLibData.xNumber(1, mSelectNew) + ")");
+        lMenuE.setTitle(getString(R.string.mnu_level_easy) + " (" + mLibData.xNumber(2, mSelectNew) + ")");
+        lMenuM.setTitle(getString(R.string.mnu_level_medium) + " (" + mLibData.xNumber(3, mSelectNew) + ")");
+        lMenuH.setTitle(getString(R.string.mnu_level_hard) + " (" + mLibData.xNumber(4, mSelectNew) + ")");
+        lMenuVH.setTitle(getString(R.string.mnu_level_very_hard) + " (" + mLibData.xNumber(5, mSelectNew) + ")");
+        lMnuSelectNew.setChecked(mSelectNew);
         lMnuSetup.setEnabled(true);
         lMnuSetupStart.setEnabled(true);
         lMnuLibrary.setEnabled(!mLoadActive);
+
         switch (mGame.xGameStatus()) {
             case SuguruGame.cStatusSetupGroups: {
                 lMnuSetupFinish.setEnabled(false);
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
                 lMnuPlayField.setEnabled(false);
+                lMnuChangeDiff.setEnabled(false);
                 break;
             }
             case SuguruGame.cStatusSetupValues: {
@@ -210,6 +256,7 @@ public class MainSuguru extends Activity {
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
                 lMnuPlayField.setEnabled(false);
+                lMnuChangeDiff.setEnabled(false);
                 break;
             }
             case SuguruGame.cStatusPlay: {
@@ -222,6 +269,7 @@ public class MainSuguru extends Activity {
                 lMnuPencil.setEnabled(true);
                 lMnuPencilAuto.setChecked(mGame.xPencilAuto());
                 lMnuPlayField.setEnabled(true);
+                lMnuChangeDiff.setEnabled(mGame.xBatchId() >= 0);
                 break;
             }
             case SuguruGame.cStatusSolved: {
@@ -233,6 +281,7 @@ public class MainSuguru extends Activity {
                 }
                 lMnuPencil.setEnabled(false);
                 lMnuPlayField.setEnabled(false);
+                lMnuChangeDiff.setEnabled(mGame.xBatchId() >= 0);
                 break;
             }
             default: {
@@ -240,6 +289,7 @@ public class MainSuguru extends Activity {
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
                 lMnuPlayField.setEnabled(false);
+                lMnuChangeDiff.setEnabled(false);
                 break;
             }
         }
@@ -254,23 +304,60 @@ public class MainSuguru extends Activity {
 
         if (pResult == RESULT_OK) {
             switch (pRequest) {
-                case 1:
+                case cReqSetup:
                     mGameParams = pInt.getExtras();
                     break;
-                case 2:
+                case cReqStore:
                     mStoreParams = pInt.getExtras();
                     break;
-                case 3:
+                case cReqImport:
                     lUri = pInt.getData();
                     lImportRunnable = new ImportLib(this, this.getApplicationContext(), lUri);
                     lAsync = new Thread(lImportRunnable);
                     lAsync.start();
                     break;
+                case cReqChangeDiff:
+                    mSelectDiffParams = pInt.getExtras();
+                    break;
             }
         }
     }
 
+    private void sSetHeader() {
+        if (mGame.xGameStatus() == SuguruGame.cStatusPlay || mGame.xGameStatus() == SuguruGame.cStatusSolved) {
+            switch (mGame.xDifficulty()) {
+                case 1: {
+                    mHeader = getString(R.string.mnu_level_very_easy);
+                    break;
+                }
+                case 2: {
+                    mHeader = getString(R.string.mnu_level_easy);
+                    break;
+                }
+                case 3: {
+                    mHeader = getString(R.string.mnu_level_medium);
+                    break;
+                }
+                case 4: {
+                    mHeader = getString(R.string.mnu_level_hard);
+                    break;
+                }
+                case 5: {
+                    mHeader = getString(R.string.mnu_level_very_hard);
+                    break;
+                }
+                default: {
+                    mHeader = getString(R.string.app_name);
+                    break;
+                }
+            }
+        } else {
+            mHeader = getString(R.string.app_name);
+        }
+    }
+
     void xFinishImport(){
+        mLibData = new LibData(mContext);
         mLoadActive = false;
     }
 
@@ -286,6 +373,10 @@ public class MainSuguru extends Activity {
 
         lInstant = Instant.now();
         mGame.xAddUsedTime((int) (lInstant.getEpochSecond() - mStartTime));
+    }
+
+    public void hSelectNew(MenuItem pItem) {
+        mSelectNew = !mSelectNew;
     }
 
     public void hNew(MenuItem pItem) {
@@ -314,7 +405,7 @@ public class MainSuguru extends Activity {
                 lDifficulty = 0;
                 break;
         }
-        lLibGame = mData.xRandomLibGame(lDifficulty);
+        lLibGame = mData.xRandomLibGame(mSelectNew, lDifficulty);
         if (lLibGame == null) {
             Toast.makeText(mContext, R.string.msg_not_found, Toast.LENGTH_SHORT).show();
         } else {
@@ -335,7 +426,7 @@ public class MainSuguru extends Activity {
         lInt = new Intent();
         lInt.setClass(this, SelectGameParams.class);
         lInt.putExtras(lBundle);
-        startActivityForResult(lInt, 1);
+        startActivityForResult(lInt, cReqSetup);
     }
 
     private void sSetupStart(int pRows, int pColumns, int pMaxValue) {
@@ -354,6 +445,7 @@ public class MainSuguru extends Activity {
     private void sStartGame() {
         sSetStartTime();
         mGame.xStartGame();
+        sSetHeader();
         mSgrView.setEnabled(true);
         mSgrView.invalidate();
     }
@@ -370,18 +462,20 @@ public class MainSuguru extends Activity {
 
         lInt = new Intent();
         lInt.setClass(this, SelectDifficulty.class);
-        startActivityForResult(lInt, 2);
+        startActivityForResult(lInt, cReqStore);
     }
 
     private void sStore(int pLevel) {
-        mGame.xToLib();
-        mData.xLibGame(mGame, pLevel);
+        int lGameId;
+
+        lGameId = mData.xStoreLibGame(mGame, pLevel);
+        mGame.xToLib(lGameId, pLevel);
+        mLibData.xAdded(pLevel);
         Toast.makeText(mContext, R.string.msg_game_stored, Toast.LENGTH_SHORT).show();
     }
 
     public void hAutoPencil(MenuItem pItem) {
         mGame.xFlipPencilAuto();
-//        mSgrView.invalidate();
     }
 
     public void hFillPencil(MenuItem pItem) {
@@ -454,6 +548,26 @@ public class MainSuguru extends Activity {
         lIntent.addCategory(Intent.CATEGORY_OPENABLE);
         lIntent.setType("application/sgl");
 
-        startActivityForResult(lIntent, 3);
+        startActivityForResult(lIntent, cReqImport);
+    }
+
+    public void hChangeDifficulty(MenuItem pItem) {
+        Intent lInt;
+        Bundle lBundle;
+
+        lInt = new Intent();
+        lInt.setClass(this, SelectDifficulty.class);
+        lBundle = new Bundle();
+        lBundle.putInt(SelectDifficulty.cLevel, mGame.xDifficulty());
+        lInt.putExtras(lBundle);
+        startActivityForResult(lInt, cReqChangeDiff);
+    }
+
+    private void sChangeDifficulty(int pDifficulty){
+        mLibData.xDeleted(mGame.xDifficulty(), !mGame.xLibSolved());
+        mGame.xChangeDifficulty(pDifficulty);
+        mData.xLibGameSetDiff(mGame.xBatchId(), mGame.xGameId(), pDifficulty);
+        mLibData.xAdded(pDifficulty);
+        Toast.makeText(mContext, R.string.msg_difficulty_changed, Toast.LENGTH_SHORT).show();
     }
 }

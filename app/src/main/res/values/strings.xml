@@ -35,4 +35,8 @@
     <string name="mnu_field_switch">Switch</string>
     <string name="mnu_field_delete">Delete</string>
     <string name="mnu_pencil_auto">Auto adjust</string>
+    <string name="mnu_select_new">New game</string>
+    <string name="mnu_level_und">Just take one</string>
+    <string name="mnu_change_difficulty">Change Difficulty</string>
+    <string name="msg_difficulty_changed">Difficulty Changed</string>
 </resources>

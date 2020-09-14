@@ -6,15 +6,17 @@ class LibGame {
     private int mBatchId;
     private int mGameId;
     private int mDifficulty;
+    private boolean mSolved;
     private int mRows;
     private int mColumns;
     private String mContent;
     private boolean mValid;
 
-    LibGame(int pBatchId, int pGameId, int pDifficulty, int pRows, int pColumns, String pContent){
+    LibGame(int pBatchId, int pGameId, int pDifficulty, boolean pSolved, int pRows, int pColumns, String pContent){
         mBatchId = pBatchId;
         mGameId = pGameId;
         mDifficulty = pDifficulty;
+        mSolved = pSolved;
         mRows = pRows;
         mColumns = pColumns;
         mContent = pContent;
@@ -75,6 +77,10 @@ class LibGame {
 
     int xDifficulty(){
         return mDifficulty;
+    }
+
+    boolean xSolved(){
+        return mSolved;
     }
 
     int xRows(){
