@@ -137,6 +137,13 @@ public class MainSuguru extends Activity {
     }
 
     @Override
+    protected void onStart(){
+        super.onStart();
+
+        mGame = mData.xCurrentGame();
+    }
+
+    @Override
     protected void onResume() {
         int lRows;
         int lColumns;
@@ -145,7 +152,6 @@ public class MainSuguru extends Activity {
 
         super.onResume();
 
-        mGame = mData.xCurrentGame();
         mSgrView.setGame(mGame);
         sSetHeader();
         if (mGame.xGameStatus() == SuguruGame.cStatusPlay) {
@@ -175,13 +181,24 @@ public class MainSuguru extends Activity {
 
     @Override
     protected void onPause() {
-        super.onPause();
-
         mRefreshHandler.removeCallbacks(mRefreshRunnable);
         if (mGame.xGameStatus() == SuguruGame.cStatusPlay) {
             sSaveUsedTime();
         }
-        mData.xSaveGame(mGame);
+
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop(){
+        SaveGame lSaveGame;
+        Thread lThread;
+
+        lSaveGame = new SaveGame(mContext, mGame);
+        lThread = new Thread(lSaveGame);
+        lThread.start();
+
+        super.onStop();
     }
 
     @Override
@@ -489,7 +506,12 @@ public class MainSuguru extends Activity {
     }
 
     public void hFieldCopy(MenuItem pItem) {
-        mData.xSavePlayField(mGame.xPlayField());
+        SavePlayfield lSavePlayfield;
+        Thread lThread;
+
+        lSavePlayfield = new SavePlayfield(mContext, mGame.xPlayField());
+        lThread = new Thread(lSavePlayfield);
+        lThread.start();
         mGame.xPlayFieldCopy();
         mSgrView.invalidate();
     }

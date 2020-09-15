@@ -43,6 +43,32 @@ class SuguruGame {
         mLibSolved = false;
     }
 
+    SuguruGame (SuguruGame pGame){
+        Group lGroup;
+        int lCount;
+        int lCellCount;
+
+        mGameStatus = pGame.mGameStatus;
+        mRows = pGame.mRows;
+        mColumns = pGame.mColumns;
+        mMaxValue = pGame.mMaxValue;
+        mPlayFields = new ArrayList<>();
+        mPlayField = new PlayField(pGame.mPlayField);
+        mPlayFields.add(mPlayField);
+        mGroups = new ArrayList<>();
+        for (lCount = 0; lCount < pGame.mGroups.size(); lCount++){
+            lGroup = new Group(pGame.mGroups.get(lCount));
+            mGroups.add(lGroup);
+        }
+        mUsedTime = pGame.mUsedTime;
+        mSetupGroup = pGame.mSetupGroup;
+        mSetupTaken = pGame.mSetupTaken;
+        mBatchId = pGame.mBatchId;
+        mGameId = pGame.mGameId;
+        mDifficulty = pGame.mDifficulty;
+        mLibSolved = pGame.mLibSolved;
+    }
+
     SuguruGame(List<Group> pGroups, List<PlayField> pFields, int pGameRows, int pGameColumns,
                int pMaxValue, int pStatus, int pDifficulty, boolean pLibSolved, int pBatchId, int pGameId, int pSelectedField, int pUsedTime){
         int lCellCount;

@@ -31,16 +31,23 @@ class Data extends SQLiteOpenHelper {
          * this will ensure that you dont accidentally leak an Activitys
          * context (see this article for more information:
          * http://developer.android.com/resources/articles/avoiding-memory-leaks.html)
+         *
+         * use double-check locking for thread-safe initialization.
+         * see https://www.geeksforgeeks.org/java-singleton-design-pattern-practices-examples/
          */
         if (mInstance == null) {
-            lContext = pContext.getApplicationContext();
-            lExternalFilesDir = lContext.getExternalFilesDir(null);
-            if (lExternalFilesDir == null) {
-                mExternalFilesDir = "";
-            } else {
-                mExternalFilesDir = lExternalFilesDir.getAbsolutePath();
+            synchronized(Data.class){
+                if (mInstance == null){
+                    lContext = pContext.getApplicationContext();
+                    lExternalFilesDir = lContext.getExternalFilesDir(null);
+                    if (lExternalFilesDir == null) {
+                        mExternalFilesDir = "";
+                    } else {
+                        mExternalFilesDir = lExternalFilesDir.getAbsolutePath();
+                    }
+                    mInstance = new Data(lContext);
+                }
             }
-            mInstance = new Data(lContext);
         }
         return mInstance;
     }
@@ -361,7 +368,7 @@ class Data extends SQLiteOpenHelper {
         lValues.put("LibSolved", (pGame.xLibSolved()) ? 1:0);
         lValues.put("BatchId", pGame.xBatchId());
         lValues.put("GameId", pGame.xGameId());
-        lValues.put("SelectedField", 0);
+        lValues.put("SelectedField", pGame.xPlayField().xFieldId());
         lValues.put("UsedTime", pGame.xUsedTime());
         lSelection = "ContextId = ?";
         lSelectionArgs = new String[]{"Suguru"};

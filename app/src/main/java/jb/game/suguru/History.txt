@@ -19,12 +19,14 @@ Version 0.91 - 21-07-2020
 Version 0.92 - 16-08-2020
     -   Corrected error in DB handling with new installation.
 
-Version 1.0 - 14-09-2020
+Version 1.0 - 15-09-2020
     -   Introduced multiple playfields
+    -   Save actions to DB are asynchronous
+    -   Save/restore of current game in onStop/onStart instead of onPause/onResume
     -   Auto pencil function can be turned off (per playfield)
     -   Start game from lib can be set to only new games or all games
     -   Difficulty of Libgame can be changed (then also game is reset to new)
     -   Difficulty of libgame is displayed in header
     -   Option "just take one" is added in start lib game
-    -   When auto pencil is enabled and a cellcelection is changed or erased (not added!) all pencilentries are erased as they then become unreliable.
+    -   When auto pencil is enabled and a cellselection is changed or erased (not added!) all pencilentries are erased as they then become unreliable.
     -   Minimal API level raised to 19 (Android 4.4).

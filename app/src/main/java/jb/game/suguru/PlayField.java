@@ -31,7 +31,15 @@ class PlayField {
         sCountFilledCells();
     }
 
+    PlayField(PlayField pField){
+       sPlayField(pField.xFieldId(), pField);
+    }
+
     PlayField(int pFieldId, PlayField pField){
+        sPlayField(pFieldId, pField);
+    }
+
+    private void sPlayField(int pFieldId, PlayField pField){
         int lCount;
 
         mFieldId = pFieldId;

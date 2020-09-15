@@ -9,6 +9,17 @@ class Group {
         sInit();
     }
 
+    Group (Group pGroup){
+        int lCount;
+
+        mCellNrs = new int[pGroup.mCellNrs.length];
+        for (lCount = 0; lCount < mCellNrs.length; lCount++){
+            mCellNrs[lCount] = pGroup.mCellNrs[lCount];
+        }
+        mGroupSize = pGroup.mGroupSize;
+        mMaxSize = pGroup.mMaxSize;
+    }
+
     Group(String pContent){
         sInit();
         int lStart;
