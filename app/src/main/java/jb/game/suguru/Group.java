@@ -21,10 +21,10 @@ class Group {
     }
 
     Group(String pContent){
-        sInit();
         int lStart;
         int lCellNr;
 
+        sInit();
         lStart = 0;
         while(lStart < pContent.length()){
             try {
@@ -103,9 +103,7 @@ class Group {
             for (lCountDelete = lCount + 1; lCountDelete < mGroupSize; lCountDelete++){
                 mCellNrs[lCountDelete - 1] = mCellNrs[lCountDelete];
             }
-            if (lCount < mGroupSize){
-                mGroupSize--;
-            }
+            mGroupSize--;
         }
         return lResult;
     }

@@ -4,11 +4,11 @@ import android.content.Context;
 
 class SaveGame implements Runnable {
     private Context mContext;
-    private SuguruGame mGame;
+    private SuguruGameBase mGame;
 
-    SaveGame (Context pContext, SuguruGame pGame){
+    SaveGame (Context pContext, SuguruGameBase pGame){
         mContext = pContext.getApplicationContext();
-        mGame = new SuguruGame(pGame);
+        mGame = new SuguruGameBase(pGame);
     }
 
     @Override

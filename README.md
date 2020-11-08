@@ -9,6 +9,13 @@ If you have any questions or remarks please send me a mail on ds21h@hotmail.com
 
 History
 
+Version 1.0.1 - 08-11-2020
+-   Save on Switch Playfield was still synchronous. Now asynchronous.
+-   Created exception: When an empty cell is filled and marked as erroneous en then erased the pencil entries are not erased.
+-   Split Cell in ValueCell that holds the playing values and GameCell that holds some redundant information (for setup and for drawing). ValueCell is used in the Playfield, while GameCell is used in the Game.
+-   Split SuguruGame in SuguruGameBase, which holds all the playing logic an SuguruGame (which inherits SuguruGameBase) that holds the multi-Playfield logic.
+-   Drop the attributes SetupSel and SetupTaken from table Cell. These are redundant and now included in GameCell.
+
 Version 1.0 - 15-09-2020
 -   Introduced multiple playfields
 -   Save actions to DB are asynchronous

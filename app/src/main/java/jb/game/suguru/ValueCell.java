@@ -2,66 +2,41 @@ package jb.game.suguru;
 
 import java.util.Arrays;
 
-class Cell {
+class ValueCell {
     private int mMaxValue;
-    private int mGroup;
-    private boolean mBndLeft;
-    private boolean mBndRight;
-    private boolean mBndTop;
-    private boolean mBndBottom;
     private int mValue;
     private boolean mFixed;
     private boolean mConflict;
-    private boolean mSetupSel;
-    private boolean mSetupTaken;
     private boolean[] mPencil;
 
-    Cell(){
+    ValueCell(){
         mMaxValue = 10;
         sFullReset();
     }
 
-    Cell(int pValue, boolean pFixed, boolean pConflict, boolean pSetupSel, boolean pSetupTaken, String pPencil){
+    ValueCell(int pValue, boolean pFixed, boolean pConflict, String pPencil){
         int lCount;
         char lPos;
 
         mMaxValue = 10;
-        mGroup = -1;
-        mBndLeft = false;
-        mBndRight = false;
-        mBndTop = false;
-        mBndBottom = false;
         mValue = pValue;
         mFixed = pFixed;
         mConflict = pConflict;
-        mSetupSel = pSetupSel;
-        mSetupTaken = pSetupTaken;
         mPencil = new boolean[mMaxValue];
         for (lCount = 0; lCount < pPencil.length(); lCount++) {
             lPos = pPencil.charAt(lCount);
             if (lPos >= '1' && lPos <= '9') {
-                mPencil[(int) (lPos - '0')] = true;
+                mPencil[lPos - '0'] = true;
             }
         }
     }
 
-    Cell(Cell pCell){
-        mMaxValue = pCell.mMaxValue;
-        mGroup = pCell.mGroup;
-        mBndLeft = pCell.mBndLeft;
-        mBndRight = pCell.mBndRight;
-        mBndTop = pCell.mBndTop;
-        mBndBottom = pCell.mBndBottom;
-        mValue = pCell.mValue;
-        mFixed = pCell.mFixed;
-        mConflict = pCell.mConflict;
-        mSetupSel = pCell.mSetupSel;
-        mSetupTaken = pCell.mSetupTaken;
-        mPencil = Arrays.copyOf(pCell.mPencil, pCell.mPencil.length);
-    }
-
-    void xFullReset(){
-        sFullReset();
+    ValueCell(ValueCell pValueCell){
+        mMaxValue = pValueCell.mMaxValue;
+        mValue = pValueCell.mValue;
+        mFixed = pValueCell.mFixed;
+        mConflict = pValueCell.mConflict;
+        mPencil = Arrays.copyOf(pValueCell.mPencil, pValueCell.mPencil.length);
     }
 
     void xPlayReset(){
@@ -69,16 +44,7 @@ class Cell {
     }
 
     private void sFullReset(){
-        int lCount;
-
-        mGroup = -1;
-        mBndLeft = false;
-        mBndRight = false;
-        mBndTop = false;
-        mBndBottom = false;
         mFixed = false;
-        mSetupSel = false;
-        mSetupTaken = false;
         sPlayReset();
     }
 
@@ -91,46 +57,6 @@ class Cell {
         for (lCount = 0; lCount < mPencil.length; lCount++) {
             mPencil[lCount] = false;
         }
-    }
-
-    int xGroup(){
-        return mGroup;
-    }
-
-    void xGroup(int pGroup){
-        mGroup = pGroup;
-    }
-
-    boolean xBndLeft(){
-        return mBndLeft;
-    }
-
-    void xBndLeft(boolean pBnd){
-        mBndLeft = pBnd;
-    }
-
-    boolean xBndRight(){
-        return mBndRight;
-    }
-
-    void xBndRight(boolean pBnd){
-        mBndRight = pBnd;
-    }
-
-    boolean xBndTop(){
-        return mBndTop;
-    }
-
-    void xBndTop(boolean pBnd){
-        mBndTop = pBnd;
-    }
-
-    boolean xBndBottom(){
-        return mBndBottom;
-    }
-
-    void xBndBottom(boolean pBnd){
-        mBndBottom = pBnd;
     }
 
     int xValue() {
@@ -161,22 +87,6 @@ class Cell {
 
     void xConflict(boolean pConflict) {
         mConflict = pConflict;
-    }
-
-    boolean xSetupSel(){
-        return mSetupSel;
-    }
-
-    void xSetupSel(boolean pSetupSel){
-        mSetupSel = pSetupSel;
-    }
-
-    boolean xSetupTaken(){
-        return mSetupTaken;
-    }
-
-    void xSetupTaken(boolean pSetupTaken){
-        mSetupTaken = pSetupTaken;
     }
 
     boolean xPencil(int pPencil) {

@@ -2,7 +2,7 @@ package jb.game.suguru;
 
 class PlayField {
     private int mFieldId;
-    private Cell[] mCells;
+    private ValueCell[] mValueCells;
     private boolean mPencilMode;
     private boolean mPencilAuto;
     private int mSelection;
@@ -12,9 +12,9 @@ class PlayField {
         int lCount;
 
         mFieldId = 0;
-        mCells = new Cell[pSize];
-        for (lCount = 0; lCount < mCells.length; lCount++) {
-            mCells[lCount] = new Cell();
+        mValueCells = new ValueCell[pSize];
+        for (lCount = 0; lCount < mValueCells.length; lCount++) {
+            mValueCells[lCount] = new ValueCell();
         }
         mPencilMode = false;
         mPencilAuto = true;
@@ -22,9 +22,9 @@ class PlayField {
         mFilledCells = 0;
     }
 
-    PlayField(int pFieldId, Cell[] pCells, int pSelection, boolean pPencil, boolean pPencilAuto) {
+    PlayField(int pFieldId, ValueCell[] pValueCells, int pSelection, boolean pPencil, boolean pPencilAuto) {
         mFieldId = pFieldId;
-        mCells = pCells;
+        mValueCells = pValueCells;
         mPencilMode = pPencil;
         mPencilAuto = pPencilAuto;
         mSelection = pSelection;
@@ -43,9 +43,9 @@ class PlayField {
         int lCount;
 
         mFieldId = pFieldId;
-        mCells = new Cell[pField.mCells.length];
-        for (lCount = 0; lCount < mCells.length; lCount++) {
-            mCells[lCount] = new Cell(pField.mCells[lCount]);
+        mValueCells = new ValueCell[pField.mValueCells.length];
+        for (lCount = 0; lCount < mValueCells.length; lCount++) {
+            mValueCells[lCount] = new ValueCell(pField.mValueCells[lCount]);
         }
         mPencilMode = pField.mPencilMode;
         mPencilAuto = pField.mPencilAuto;
@@ -61,8 +61,8 @@ class PlayField {
         int lCount;
 
         mFilledCells = 0;
-        for (lCount = 0; lCount < mCells.length; lCount++){
-            if (mCells[lCount].xValue() != 0){
+        for (lCount = 0; lCount < mValueCells.length; lCount++){
+            if (mValueCells[lCount].xValue() != 0){
                 mFilledCells++;
             }
         }
@@ -81,7 +81,7 @@ class PlayField {
     }
 
     boolean xFieldFull(){
-        if (mFilledCells == mCells.length){
+        if (mFilledCells == mValueCells.length){
             return true;
         } else {
             return false;
@@ -107,53 +107,53 @@ class PlayField {
 
     void xClearPencil(){
         int lCount;
-        Cell lCell;
+        ValueCell lValueCell;
 
-        for (lCount = 0; lCount < mCells.length; lCount++){
-            lCell = mCells[lCount];
-            lCell.xClearPencils();
+        for (lCount = 0; lCount < mValueCells.length; lCount++){
+            lValueCell = mValueCells[lCount];
+            lValueCell.xClearPencils();
         }
     }
 
-    Cell xSelectedCell() {
-        return mCells[mSelection];
+    ValueCell xSelectedCell() {
+        return mValueCells[mSelection];
     }
 
-    Cell xCell(int pCellNr) {
-        return mCells[pCellNr];
+    ValueCell xCell(int pCellNr) {
+        return mValueCells[pCellNr];
     }
 
-    Cell[] xCells(){
-        return mCells;
+    ValueCell[] xCells(){
+        return mValueCells;
     }
 
     void xResetField(){
         int lCount;
 
         mFilledCells = 0;
-        for (lCount = 0; lCount < mCells.length; lCount++){
-            if (mCells[lCount].xFixed()){
+        for (lCount = 0; lCount < mValueCells.length; lCount++){
+            if (mValueCells[lCount].xFixed()){
                 mFilledCells++;
             } else {
-                mCells[lCount].xPlayReset();
+                mValueCells[lCount].xPlayReset();
             }
         }
     }
 
     boolean xSetSelectedCellValue(int pValue) {
-        Cell lCell;
+        ValueCell lValueCell;
         boolean lValueSet;
 
-        lCell = mCells[mSelection];
-        if (lCell.xValue() == pValue) {
-            lCell.xValueReset();
+        lValueCell = mValueCells[mSelection];
+        if (lValueCell.xValue() == pValue) {
+            lValueCell.xValueReset();
             mFilledCells--;
             lValueSet = false;
         } else {
-            if (lCell.xValue() == 0){
+            if (lValueCell.xValue() == 0){
                 mFilledCells++;
             }
-            lCell.xValue(pValue);
+            lValueCell.xValue(pValue);
             lValueSet = true;
         }
         return lValueSet;
@@ -162,8 +162,8 @@ class PlayField {
     void xResetConflicts() {
         int lCount;
 
-        for (lCount = 0; lCount < mCells.length; lCount++) {
-            mCells[lCount].xConflict(false);
+        for (lCount = 0; lCount < mValueCells.length; lCount++) {
+            mValueCells[lCount].xConflict(false);
         }
     }
  }

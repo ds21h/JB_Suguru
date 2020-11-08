@@ -552,7 +552,12 @@ public class MainSuguru extends Activity {
     }
 
     private void sSwitchPlayField(int pNewId){
-        mData.xSavePlayField(mGame.xPlayField());
+        SavePlayfield lSavePlayfield;
+        Thread lThread;
+
+        lSavePlayfield = new SavePlayfield(mContext, mGame.xPlayField());
+        lThread = new Thread(lSavePlayfield);
+        lThread.start();
         mGame.xSwitchPlayField(pNewId);
         mSgrView.invalidate();
     }
@@ -568,7 +573,8 @@ public class MainSuguru extends Activity {
 
         lIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         lIntent.addCategory(Intent.CATEGORY_OPENABLE);
-        lIntent.setType("application/sgl");
+//        lIntent.setType("application/sgl");
+        lIntent.setType("*/sgl");
 
         startActivityForResult(lIntent, cReqImport);
     }
