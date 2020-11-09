@@ -27,4 +27,16 @@
     <string name="msg_no_selection">Nothing Selected!</string>
     <string name="msg_game_stored">Game Stored!</string>
     <string name="mnu_game">Game</string>
+    <string name="mnu_lib">Library</string>
+    <string name="mnu_import">Import</string>
+    <string name="msg_not_found">Not Found</string>
+    <string name="mnu_fields">PlayFields</string>
+    <string name="mnu_field_copy">Copy</string>
+    <string name="mnu_field_switch">Switch</string>
+    <string name="mnu_field_delete">Delete</string>
+    <string name="mnu_pencil_auto">Auto adjust</string>
+    <string name="mnu_select_new">New game</string>
+    <string name="mnu_level_und">Just take one</string>
+    <string name="mnu_change_difficulty">Change Difficulty</string>
+    <string name="msg_difficulty_changed">Difficulty Changed</string>
 </resources>

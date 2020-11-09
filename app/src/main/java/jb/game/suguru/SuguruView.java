@@ -18,7 +18,7 @@ public class SuguruView extends View {
     private final int cButtonMargin = 20;
     private int mMargin = cMargin;
 
-    private Paint mPaint = new Paint();
+    private final Paint mPaint = new Paint();
 
     private final int cColorBackNorm = Color.argb(255, 255, 255, 245);
     private final int cColorBackFixed = Color.argb(255, 230, 230, 230);
@@ -44,7 +44,7 @@ public class SuguruView extends View {
     private RectF[] mButton = new RectF[6];
     private boolean mEnabled = true;
     private boolean mButtonsEnabled = false;
-    private Context mContext;
+    private final Context mContext;
 
     private intSuguruView mIntView = null;
 
@@ -138,7 +138,7 @@ public class SuguruView extends View {
         if (mGame != null){
             mButtonSize = (getWidth() / (float)(mGame.xMaxValue() + 2)) - (2 * cButtonMargin);
             lCellHor = (getWidth() - (2 * cMargin)) / (float)mGame.xColumns();
-            lCellVert = (getHeight() - cMargin - (3 * cButtonMargin) - mButtonSize) / (float)(mGame.xRows());
+            lCellVert = (getHeight() - cMargin - (3 * cButtonMargin) - mButtonSize) / (mGame.xRows() + 0.5F);
             if (lCellHor < lCellVert){
                 mCellSize = lCellHor;
                 mMargin = cMargin;
@@ -166,11 +166,11 @@ public class SuguruView extends View {
         int lColumn;
         int lPencilRow;
         int lPencilColumn;
-        int lPencilPos;
         float lRowMargin;
         float lColumnMargin;
         RectF lRect;
-        Cell lCell;
+        ValueCell lValueCell;
+        GameCell lGameCell;
         float lPencilCellSize;
         int lPencil;
         int lAlpha;
@@ -185,7 +185,8 @@ public class SuguruView extends View {
             lRowMargin = (lRow * mCellSize) + cMargin;
             for (lColumn = 0; lColumn < mGame.xColumns(); lColumn++) {
                 lColumnMargin = (lColumn * mCellSize) + mMargin;
-                lCell = mGame.xPlayCell(lRow, lColumn);
+                lValueCell = mGame.xPlayCell(lRow, lColumn);
+                lGameCell = mGame.xGameCell(lRow, lColumn);
                 lRect = new RectF(lColumnMargin, lRowMargin,
                         lColumnMargin + mCellSize, lRowMargin + mCellSize);
 
@@ -193,13 +194,15 @@ public class SuguruView extends View {
                 mPaint.setStrokeWidth(cStrokeNone);
                 mPaint.setStyle(Paint.Style.FILL);
                 if (mGame.xGameStatus() == SuguruGame.cStatusSetupGroups){
-                    if (lCell.xSetupTaken()){
+                    if (lGameCell.xSetupTaken()){
+//                        if (lValueCell.xSetupTaken()){
                         mPaint.setColor(cColorBackTaken);
                     } else {
-                        if (lCell.xConflict()){
+                        if (lValueCell.xConflict()){
                             mPaint.setColor(cColorBackConflict);
                         } else {
-                            if (lCell.xSetupSel()){
+                            if (lGameCell.xSetupSel()){
+//                                if (lValueCell.xSetupSel()){
                                 mPaint.setColor(cColorBackSel);
                             } else {
                                 mPaint.setColor(cColorBackNorm);
@@ -207,7 +210,7 @@ public class SuguruView extends View {
                         }
                     }
                 } else {
-                    if (lCell.xFixed()) {
+                    if (lValueCell.xFixed()) {
                         mPaint.setColor(cColorBackFixed);
                     } else {
                         if (mGame.xIsSelection(lRow, lColumn)){
@@ -222,17 +225,17 @@ public class SuguruView extends View {
 
                 //      Cell value
                 mPaint.setStyle(Paint.Style.FILL);
-                if (lCell.xValue() > 0) {
+                if (lValueCell.xValue() > 0) {
                     //  Normal
                     mPaint.setTextSize(mCellSize * 0.8F);
                     mPaint.setTextAlign(Paint.Align.CENTER);
-                    if (lCell.xConflict()) {
+                    if (lValueCell.xConflict()) {
                         mPaint.setColor(cColorForeConflict);
                     } else {
                         mPaint.setColor(cColorForeNorm);
                     }
                     mPaint.setAlpha(lAlpha);
-                    pCanvas.drawText(String.valueOf(lCell.xValue()),
+                    pCanvas.drawText(String.valueOf(lValueCell.xValue()),
                             lRect.centerX(),
                             lRect.bottom - mPaint.getFontMetrics().descent,
                             mPaint);
@@ -245,21 +248,9 @@ public class SuguruView extends View {
                     for (lPencilRow = 0; lPencilRow < 3; lPencilRow++) {
                         for (lPencilColumn = 0; lPencilColumn < 3; lPencilColumn++) {
                             lPencil = (lPencilRow * 3) + lPencilColumn + 1;
-                            if (lCell.xPencil(lPencil)) {
+                            if (lValueCell.xPencil(lPencil)) {
                                 pCanvas.drawText(String.valueOf(lPencil), lRect.left + (lPencilColumn * lPencilCellSize) + (lPencilCellSize / 2), lRect.top + ((lPencilRow + 1) * lPencilCellSize) - (mPaint.getFontMetrics().descent / 2), mPaint);
                             }
-
-/*                            lPencilPos = (lPencilRow * 3) + lPencilColumn;
-                            lPencil = lPencilPos / 2;
-                            if (lPencilPos == (lPencil * 2)){
-                                lPencil++;
-                                if (lCell.xPencil(lPencil)) {
-                                    pCanvas.drawText(String.valueOf(lPencil),
-                                            lRect.left + (lPencilColumn * lPencilCellSize) + (lPencilCellSize / 2),
-                                            lRect.top + ((lPencilRow + 1) * lPencilCellSize) - (mPaint.getFontMetrics().descent / 2),
-                                            mPaint);
-                                }
-                            } */
                         }
                     }
                 }
@@ -267,34 +258,44 @@ public class SuguruView extends View {
                 mPaint.setStyle(Paint.Style.STROKE);
                 mPaint.setColor(cColorForeNorm);
                 mPaint.setAlpha(lAlpha);
-                if (lCell.xBndLeft()){
+                if (lGameCell.xBndLeft()){
                     mPaint.setStrokeWidth(cStrokeWide);
                 } else {
                     mPaint.setStrokeWidth(cStrokeNarrow);
                 }
                 pCanvas.drawLine(lColumnMargin, lRowMargin, lColumnMargin, lRowMargin + mCellSize, mPaint);
 
-                if (lCell.xBndRight()){
+                if (lGameCell.xBndRight()){
                     mPaint.setStrokeWidth(cStrokeWide);
                 } else {
                     mPaint.setStrokeWidth(cStrokeNarrow);
                 }
                 pCanvas.drawLine(lColumnMargin + mCellSize, lRowMargin, lColumnMargin + mCellSize, lRowMargin + mCellSize, mPaint);
 
-                if (lCell.xBndTop()){
+                if (lGameCell.xBndTop()){
                     mPaint.setStrokeWidth(cStrokeWide);
                 } else {
                     mPaint.setStrokeWidth(cStrokeNarrow);
                 }
                 pCanvas.drawLine(lColumnMargin, lRowMargin, lColumnMargin + mCellSize, lRowMargin, mPaint);
 
-                if (lCell.xBndBottom()){
+                if (lGameCell.xBndBottom()){
                     mPaint.setStrokeWidth(cStrokeWide);
                 } else {
                     mPaint.setStrokeWidth(cStrokeNarrow);
                 }
                 pCanvas.drawLine(lColumnMargin, lRowMargin + mCellSize, lColumnMargin + mCellSize, lRowMargin + mCellSize, mPaint);
             }
+        }
+        if (mGame.xFieldCount() > 1){
+            mPaint.setStrokeWidth(cStrokeNarrow);
+            mPaint.setStyle(Paint.Style.FILL);
+            mPaint.setTextSize(mCellSize * 0.4F);
+            mPaint.setTextAlign(Paint.Align.RIGHT);
+            mPaint.setColor(cColorForeNorm);
+            mPaint.setAlpha(lAlpha);
+            pCanvas.drawText(String.valueOf(mGame.xPlayField().xFieldId()), cMargin + (mCellSize * mGame.xColumns()),  (mCellSize * mGame.xRows()) - mPaint.getFontMetrics().top + (cMargin * 2), mPaint);
+            mPaint.setTextAlign(Paint.Align.CENTER);
         }
     }
 

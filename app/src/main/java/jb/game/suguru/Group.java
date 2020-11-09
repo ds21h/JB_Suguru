@@ -9,17 +9,28 @@ class Group {
         sInit();
     }
 
+    Group (Group pGroup){
+        int lCount;
+
+        mCellNrs = new int[pGroup.mCellNrs.length];
+        for (lCount = 0; lCount < mCellNrs.length; lCount++){
+            mCellNrs[lCount] = pGroup.mCellNrs[lCount];
+        }
+        mGroupSize = pGroup.mGroupSize;
+        mMaxSize = pGroup.mMaxSize;
+    }
+
     Group(String pContent){
-        sInit();
         int lStart;
         int lCellNr;
 
+        sInit();
         lStart = 0;
         while(lStart < pContent.length()){
             try {
                 lCellNr = Integer.parseInt(pContent.substring(lStart, lStart + 3));
                 xAdd(lCellNr);
-            } catch (NumberFormatException pExc){ }
+            } catch (NumberFormatException ignored){ }
             lStart += 3;
         }
     }
@@ -92,9 +103,7 @@ class Group {
             for (lCountDelete = lCount + 1; lCountDelete < mGroupSize; lCountDelete++){
                 mCellNrs[lCountDelete - 1] = mCellNrs[lCountDelete];
             }
-            if (lCount < mGroupSize){
-                mGroupSize--;
-            }
+            mGroupSize--;
         }
         return lResult;
     }

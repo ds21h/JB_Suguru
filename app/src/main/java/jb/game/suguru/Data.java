@@ -5,7 +5,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.security.keystore.StrongBoxUnavailableException;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -20,7 +19,7 @@ class Data extends SQLiteOpenHelper {
     private static Data mInstance = null;
 
     private static final String cDBName = "Suguru.db";
-    private static final int cDBVersion = 2;
+    private static final int cDBVersion = 4;
     private static String mExternalFilesDir;
 
     static Data getInstance(Context pContext) {
@@ -31,16 +30,23 @@ class Data extends SQLiteOpenHelper {
          * this will ensure that you dont accidentally leak an Activitys
          * context (see this article for more information:
          * http://developer.android.com/resources/articles/avoiding-memory-leaks.html)
+         *
+         * use double-check locking for thread-safe initialization.
+         * see https://www.geeksforgeeks.org/java-singleton-design-pattern-practices-examples/
          */
         if (mInstance == null) {
-            lContext = pContext.getApplicationContext();
-            lExternalFilesDir = lContext.getExternalFilesDir(null);
-            if (lExternalFilesDir == null) {
-                mExternalFilesDir = "";
-            } else {
-                mExternalFilesDir = lExternalFilesDir.getAbsolutePath();
+            synchronized(Data.class){
+                if (mInstance == null){
+                    lContext = pContext.getApplicationContext();
+                    lExternalFilesDir = lContext.getExternalFilesDir(null);
+                    if (lExternalFilesDir == null) {
+                        mExternalFilesDir = "";
+                    } else {
+                        mExternalFilesDir = lExternalFilesDir.getAbsolutePath();
+                    }
+                    mInstance = new Data(lContext);
+                }
             }
-            mInstance = new Data(lContext);
         }
         return mInstance;
     }
@@ -74,6 +80,17 @@ class Data extends SQLiteOpenHelper {
         switch (pOldVersion){
             case 1:
                 sDefineLib(pDB);
+                sUpgradeGame1_3(pDB);
+                sUpgradePlayfield1_3(pDB);
+                sUpgradeCell1_4(pDB);
+                break;
+            case 2:
+                sUpgradeGame1_3(pDB);
+                sUpgradePlayfield1_3(pDB);
+                sUpgradeCell1_4(pDB);
+                break;
+            case 3:
+                sUpgradeCell1_4(pDB);
                 break;
             default:
                 pDB.execSQL("DROP TABLE IF EXISTS SuguruGame");
@@ -95,7 +112,9 @@ class Data extends SQLiteOpenHelper {
                         "MaxValue Integer Not Null, " +
                         "Status Integer Not Null, " +
                         "Difficulty Integer Not Null, " +
-                        "Lib Integer Not Null, " +
+                        "LibSolved Integer Not Null, " +
+                        "BatchId Integer Not Null, " +
+                        "GameId Integer Not Null, " +
                         "SelectedField Integer Not Null, " +
                         "UsedTime Integer Not Null" +
                         ")"
@@ -105,9 +124,9 @@ class Data extends SQLiteOpenHelper {
     private void sInitGame(SQLiteDatabase pDB) {
         pDB.execSQL(
                 "INSERT INTO SuguruGame " +
-                        "(ContextId, Rows, Columns, MaxValue, Status, Difficulty, Lib, SelectedField, UsedTime) " +
+                        "(ContextId, Rows, Columns, MaxValue, Status, Difficulty, LibSolved, BatchId, GameId, SelectedField, UsedTime) " +
                         "VALUES " +
-                        "('Suguru', 5, 5, 5, 0, 0, 0, -1, 0)"
+                        "('Suguru', 5, 5, 5, 0, 0, 0, -1, -1, -1, 0)"
         );
     }
 
@@ -125,7 +144,8 @@ class Data extends SQLiteOpenHelper {
                 "CREATE TABLE PlayField " +
                         "(FieldId Integer primary key, " +
                         "Selection Integer Not Null, " +
-                        "Pencil Integer Not Null" +
+                        "Pencil Integer Not Null, " +
+                        "PencilAuto Integer Not Null" +
                         ")"
         );
     }
@@ -139,8 +159,6 @@ class Data extends SQLiteOpenHelper {
                         "Value Integer Not Null, " +
                         "Fixed Integer Not Null, " +
                         "Confl Integer Not Null, " +
-                        "SetupSel Integer Not Null, " +
-                        "SetupTaken Integer Not Null, " +
                         "Pencil Text Not Null" +
                         ")"
         );
@@ -155,14 +173,129 @@ class Data extends SQLiteOpenHelper {
                         "Rows Integer Not Null, " +
                         "Columns Integer Not Null, " +
                         "Difficulty Integer Not Null, " +
-                        "Content Text Not Null" +
+                        "Solved Integer Not Null, " +
+                        "Content Text Not Null, " +
+                        "UNIQUE (BatchId, GameId)" +
                         ")"
         );
     }
 
-    void xSaveGame(SuguruGame pGame) {
+    private void sUpgradeGame1_3(SQLiteDatabase pDB){
+        pDB.execSQL(
+            "CREATE TABLE Game_temp AS SELECT * " +
+                "FROM SuguruGame"
+        );
+
+        pDB.execSQL(
+            "DROP TABLE SuguruGame"
+        );
+
+        sDefineGame(pDB);
+
+        pDB.execSQL(
+            "INSERT INTO SuguruGame (" +
+                "ContextId, " +
+                "Rows, " +
+                "Columns, " +
+                "MaxValue, " +
+                "Status, " +
+                "Difficulty, " +
+                "LibSolved, " +
+                "BatchId, " +
+                "GameId, " +
+                "SelectedField, " +
+                "UsedTime" +
+            ") " +
+            "SELECT " +
+                "ContextId, " +
+                "Rows, " +
+                "Columns, " +
+                "MaxValue, " +
+                "Status, " +
+                "Difficulty, " +
+                "0, " +
+                "-1, " +
+                "-1, " +
+                "SelectedField, " +
+                "UsedTime " +
+            "FROM Game_temp"
+        );
+
+        pDB.execSQL(
+            "DROP TABLE Game_temp"
+        );
+    }
+
+    private void sUpgradePlayfield1_3(SQLiteDatabase pDB){
+        pDB.execSQL(
+                "CREATE TABLE PlayField_temp AS SELECT * " +
+                        "FROM PlayField"
+        );
+
+        pDB.execSQL(
+                "DROP TABLE PlayField"
+        );
+
+        sDefinePlayField(pDB);
+
+        pDB.execSQL(
+                "INSERT INTO PlayField (" +
+                        "FieldId, " +
+                        "Selection, " +
+                        "Pencil, " +
+                        "PencilAuto" +
+                        ") " +
+                        "SELECT " +
+                        "FieldId, " +
+                        "Selection, " +
+                        "Pencil, " +
+                        "1 " +
+                        "FROM PlayField_temp"
+        );
+
+        pDB.execSQL(
+                "DROP TABLE PlayField_temp"
+        );
+    }
+
+    private void sUpgradeCell1_4(SQLiteDatabase pDB){
+        pDB.execSQL(
+                "CREATE TABLE Cell_temp AS SELECT * " +
+                        "FROM Cell"
+        );
+
+        pDB.execSQL(
+                "DROP TABLE Cell"
+        );
+
+        sDefineCell(pDB);
+
+        pDB.execSQL(
+                "INSERT INTO Cell (" +
+                        "FieldId, " +
+                        "CellNumber, " +
+                        "Value, " +
+                        "Fixed, " +
+                        "Confl, " +
+                        "Pencil" +
+                        ") " +
+                        "SELECT " +
+                        "FieldId, " +
+                        "CellNumber, " +
+                        "Value, " +
+                        "Fixed, " +
+                        "Confl, " +
+                        "Pencil " +
+                        "FROM Cell_temp"
+        );
+
+        pDB.execSQL(
+                "DROP TABLE Cell_temp"
+        );
+    }
+
+    void xSaveGame(SuguruGameBase pGame) {
         SQLiteDatabase lDB;
-        List<PlayField> lFields;
 
         lDB = this.getWritableDatabase();
 
@@ -173,15 +306,35 @@ class Data extends SQLiteOpenHelper {
         lDB.close();
     }
 
+    void xSavePlayField(PlayField pPlayField){
+        SQLiteDatabase lDB;
+
+        lDB = this.getWritableDatabase();
+
+        sSavePlayField(lDB, pPlayField);
+
+        lDB.close();
+    }
+
+    void xDeletePlayField(int pFieldId){
+        SQLiteDatabase lDB;
+
+        lDB = this.getWritableDatabase();
+
+        sDeletePlayField(lDB, pFieldId);
+
+        lDB.close();
+    }
+
     private void sSavePlayField(SQLiteDatabase pDB, PlayField pPlayField) {
-        Cell[] lCells;
+        ValueCell[] lValueCells;
         int lCount;
 
         sDeletePlayField(pDB, pPlayField.xFieldId());
         sNewPlayField(pDB, pPlayField);
-        lCells = pPlayField.xCells();
-        for (lCount = 0; lCount < lCells.length; lCount++) {
-            sNewCell(pDB, pPlayField.xFieldId(), lCount, lCells[lCount]);
+        lValueCells = pPlayField.xCells();
+        for (lCount = 0; lCount < lValueCells.length; lCount++) {
+            sNewCell(pDB, pPlayField.xFieldId(), lCount, lValueCells[lCount]);
         }
     }
 
@@ -205,22 +358,21 @@ class Data extends SQLiteOpenHelper {
         lValues.put("FieldId", pField.xFieldId());
         lValues.put("Selection", pField.xSelection());
         lValues.put("Pencil", (pField.xPencilMode()) ? 1 : 0);
+        lValues.put("PencilAuto", (pField.xPencilAuto()) ? 1 : 0);
 
         pDB.insert("PlayField", null, lValues);
     }
 
-    private void sNewCell(SQLiteDatabase pDB, int pFieldId, int pCellNumber, Cell pCell) {
+    private void sNewCell(SQLiteDatabase pDB, int pFieldId, int pCellNumber, ValueCell pValueCell) {
         ContentValues lValues;
 
         lValues = new ContentValues();
         lValues.put("FieldId", pFieldId);
         lValues.put("CellNumber", pCellNumber);
-        lValues.put("Value", pCell.xValue());
-        lValues.put("Fixed", (pCell.xFixed()) ? 1 : 0);
-        lValues.put("Confl", (pCell.xConflict()) ? 1 : 0);
-        lValues.put("SetupSel", (pCell.xSetupSel()) ? 1 : 0);
-        lValues.put("SetupTaken", (pCell.xSetupTaken()) ? 1 : 0);
-        lValues.put("Pencil", pCell.xPencils());
+        lValues.put("Value", pValueCell.xValue());
+        lValues.put("Fixed", (pValueCell.xFixed()) ? 1 : 0);
+        lValues.put("Confl", (pValueCell.xConflict()) ? 1 : 0);
+        lValues.put("Pencil", pValueCell.xPencils());
 
         pDB.insert("Cell", null, lValues);
     }
@@ -237,7 +389,7 @@ class Data extends SQLiteOpenHelper {
         lDB.close();
     }
 
-    private void sUpdateGame(SQLiteDatabase pDB, SuguruGame pGame) {
+    private void sUpdateGame(SQLiteDatabase pDB, SuguruGameBase pGame) {
         ContentValues lValues;
         String lSelection;
         String[] lSelectionArgs;
@@ -247,9 +399,11 @@ class Data extends SQLiteOpenHelper {
         lValues.put("Columns", pGame.xColumns());
         lValues.put("MaxValue", pGame.xMaxValue());
         lValues.put("Status", pGame.xGameStatus());
-        lValues.put("Difficulty", 0);
-        lValues.put("Lib", (pGame.xLib()) ? 1 : 0);
-        lValues.put("SelectedField", 0);
+        lValues.put("Difficulty", pGame.xDifficulty());
+        lValues.put("LibSolved", (pGame.xLibSolved()) ? 1:0);
+        lValues.put("BatchId", pGame.xBatchId());
+        lValues.put("GameId", pGame.xGameId());
+        lValues.put("SelectedField", pGame.xPlayField().xFieldId());
         lValues.put("UsedTime", pGame.xUsedTime());
         lSelection = "ContextId = ?";
         lSelectionArgs = new String[]{"Suguru"};
@@ -257,7 +411,7 @@ class Data extends SQLiteOpenHelper {
         pDB.update("SuguruGame", lValues, lSelection, lSelectionArgs);
     }
 
-    private void sSaveGroups(SQLiteDatabase pDB, SuguruGame pGame) {
+    private void sSaveGroups(SQLiteDatabase pDB, SuguruGameBase pGame) {
         ContentValues lValues;
         List<Group> lGroups;
         Group lGroup;
@@ -291,12 +445,14 @@ class Data extends SQLiteOpenHelper {
         int lMaxValue = 0;
         int lStatus = 0;
         int lDifficulty = -1;
-        int lLib = 0;
+        int lLibSolved = 0;
+        int lBatchId = -1;
+        int lGameId = -1;
         int lSelectedField = 0;
         int lUsedTime = 0;
 
         lDB = this.getReadableDatabase();
-        lColumns = new String[]{"Rows", "Columns", "MaxValue", "Status", "Difficulty", "Lib", "SelectedField", "UsedTime"};
+        lColumns = new String[]{"Rows", "Columns", "MaxValue", "Status", "Difficulty", "LibSolved", "BatchId", "GameId", "SelectedField", "UsedTime"};
         lSelection = "ContextId = ?";
         lSelectionArgs = new String[]{"Suguru"};
 
@@ -308,9 +464,11 @@ class Data extends SQLiteOpenHelper {
                 lMaxValue = lCursor.getInt(2);
                 lStatus = lCursor.getInt(3);
                 lDifficulty = lCursor.getInt(4);
-                lLib = lCursor.getInt(5);
-                lSelectedField = lCursor.getInt(6);
-                lUsedTime = lCursor.getInt(7);
+                lLibSolved = lCursor.getInt(5);
+                lBatchId = lCursor.getInt(6);
+                lGameId = lCursor.getInt(7);
+                lSelectedField = lCursor.getInt(8);
+                lUsedTime = lCursor.getInt(9);
             }
             lCursor.close();
         } catch (Exception ignored) { }
@@ -320,7 +478,7 @@ class Data extends SQLiteOpenHelper {
 
         lDB.close();
 
-        lGame = new SuguruGame(lGroups, lFields, lGameRows, lGameColumns, lMaxValue, lStatus, lDifficulty, (lLib == 0) ? false : true, lSelectedField, lUsedTime);
+        lGame = new SuguruGame(lGroups, lFields, lGameRows, lGameColumns, lMaxValue, lStatus, lDifficulty, lLibSolved > 0, lBatchId, lGameId, lSelectedField, lUsedTime);
         return lGame;
     }
 
@@ -332,7 +490,6 @@ class Data extends SQLiteOpenHelper {
         String lSequence;
         int lGroupId;
         String lContent;
-        int lPencil;
 
 
         lGroups = new ArrayList<>();
@@ -353,17 +510,18 @@ class Data extends SQLiteOpenHelper {
     private List<PlayField> sGetFields(SQLiteDatabase pDB, int pSize) {
         List<PlayField> lFields;
         PlayField lField;
-        Cell[] lCells;
+        ValueCell[] lValueCells;
         Cursor lCursor;
         String[] lColumns;
         String lSequence;
         int lFieldId;
         int lSel;
         int lPencil;
+        int lPencilAuto;
 
         lFields = new ArrayList<>();
 
-        lColumns = new String[]{"FieldId", "Selection", "Pencil"};
+        lColumns = new String[]{"FieldId", "Selection", "Pencil", "PencilAuto"};
         lSequence = "FieldId";
 
         lCursor = pDB.query("PlayField", lColumns, null, null, null, null, lSequence);
@@ -371,9 +529,10 @@ class Data extends SQLiteOpenHelper {
             lFieldId = lCursor.getInt(0);
             lSel = lCursor.getInt(1);
             lPencil = lCursor.getInt(2);
-            lCells = sGetCells(pDB, lFieldId, pSize);
+            lPencilAuto = lCursor.getInt(3);
+            lValueCells = sGetCells(pDB, lFieldId, pSize);
             //noinspection RedundantConditionalExpression
-            lField = new PlayField(lFieldId, lCells, lSel, (lPencil == 0) ? false : true);
+            lField = new PlayField(lFieldId, lValueCells, lSel, (lPencil == 0) ? false : true, (lPencilAuto == 0) ? false : true);
             lFields.add(lField);
         }
         lCursor.close();
@@ -381,9 +540,9 @@ class Data extends SQLiteOpenHelper {
         return lFields;
     }
 
-    private Cell[] sGetCells(SQLiteDatabase pDB, int pFieldId, int pSize) {
-        Cell[] lCells;
-        Cell lCell;
+    private ValueCell[] sGetCells(SQLiteDatabase pDB, int pFieldId, int pSize) {
+        ValueCell[] lValueCells;
+        ValueCell lValueCell;
         Cursor lCursor;
         String[] lColumns;
         String lSelection;
@@ -393,17 +552,15 @@ class Data extends SQLiteOpenHelper {
         int lValue;
         int lFixed;
         int lConflict;
-        int lSetupSel;
-        int lSetupTaken;
         String lPencil;
 
-        lColumns = new String[]{"CellNumber", "Value", "Fixed", "Confl", "SetupSel", "SetupTaken", "Pencil"};
+        lColumns = new String[]{"CellNumber", "Value", "Fixed", "Confl", "Pencil"};
         lSelection = "FieldId = ?";
         lSelectionArgs = new String[1];
         lSelectionArgs[0] = String.valueOf(pFieldId);
         lSequence = "CellNumber";
 
-        lCells = new Cell[pSize];
+        lValueCells = new ValueCell[pSize];
 
         lCursor = pDB.query("Cell", lColumns, lSelection, lSelectionArgs, null, null, lSequence);
         while (lCursor.moveToNext()) {
@@ -411,19 +568,17 @@ class Data extends SQLiteOpenHelper {
             lValue = lCursor.getInt(1);
             lFixed = lCursor.getInt(2);
             lConflict = lCursor.getInt(3);
-            lSetupSel = lCursor.getInt(4);
-            lSetupTaken = lCursor.getInt(5);
-            lPencil = lCursor.getString(6);
+            lPencil = lCursor.getString(4);
             //noinspection RedundantConditionalExpression
-            lCell = new Cell(lValue, (lFixed == 0) ? false : true, (lConflict == 0) ? false : true, (lSetupSel == 0) ? false : true, (lSetupTaken == 0) ? false : true, lPencil);
-            lCells[lCellNumber] = lCell;
+            lValueCell = new ValueCell(lValue, (lFixed == 0) ? false : true, (lConflict == 0) ? false : true, lPencil);
+            lValueCells[lCellNumber] = lValueCell;
         }
         lCursor.close();
 
-        return lCells;
+        return lValueCells;
     }
 
-    void xLibGame(SuguruGame pGame, int pDifficulty){
+    int xStoreLibGame(SuguruGame pGame, int pDifficulty){
         SQLiteDatabase lDB;
         int lGameId;
         ContentValues lValues;
@@ -439,11 +594,14 @@ class Data extends SQLiteOpenHelper {
         lValues.put("Rows", pGame.xRows());
         lValues.put("Columns", pGame.xColumns());
         lValues.put("Difficulty", pDifficulty);
+        lValues.put("Solved", 0);
         lValues.put("Content", pGame.xGameBasic());
 
         lDB.insert("Lib", null, lValues);
 
         lDB.close();
+
+        return lGameId;
     }
 
     private int sMaxGameId(SQLiteDatabase pDB){
@@ -460,20 +618,45 @@ class Data extends SQLiteOpenHelper {
         return lMax;
     }
 
-    LibGame xRandomLibGame(int pDifficulty){
+    LibGame xRandomLibGame(boolean pNew, int pDifficulty){
         SQLiteDatabase lDB;
         Cursor lCursor;
         int lSize;
         Random lRandom;
         int lPos;
         String[] lColumns;
+        String lSelection;
+        String[] lSelectionArgs;
         LibGame lLibGame = null;
+        int lBatchId;
+        int lGameId;
+        int lDifficulty;
+        int lSolved;
+        int lRows;
+        int lCols;
+        String lContent;
 
         lDB = this.getReadableDatabase();
 
-        lColumns = new String[]{"Rows", "Columns", "Content"};
+        lColumns = new String[]{"BatchId", "GameId", "Difficulty", "Solved", "Rows", "Columns", "Content"};
+        if (pDifficulty > 0){
+            if (pNew){
+                lSelection = "Difficulty = ? AND Solved = 0";
+            } else {
+                lSelection = "Difficulty = ?";
+            }
+            lSelectionArgs = new String[1];
+            lSelectionArgs[0] = String.valueOf(pDifficulty);
 
-        lCursor = lDB.query("Lib", lColumns, null, null, null, null, null);
+            lCursor = lDB.query("Lib", lColumns, lSelection, lSelectionArgs, null, null, null);
+        } else {
+            if (pNew){
+                lSelection = "Solved = 0";
+                lCursor = lDB.query("Lib", lColumns, lSelection, null, null, null, null);
+            } else {
+                lCursor = lDB.query("Lib", lColumns, null, null, null, null, null);
+            }
+        }
 
         lSize = lCursor.getCount();
         if (lSize > 0){
@@ -481,15 +664,101 @@ class Data extends SQLiteOpenHelper {
             lPos = lRandom.nextInt(lSize);
             lCursor.moveToPosition(lPos);
 
-            lLibGame = new LibGame();
-            lLibGame.xRows = lCursor.getInt(0);
-            lLibGame.xColumns = lCursor.getInt(1);
-            lLibGame.xContent = lCursor.getString(2);
+            lBatchId = lCursor.getInt(0);
+            lGameId = lCursor.getInt(1);
+            lDifficulty = lCursor.getInt(2);
+            lSolved = lCursor.getInt(3);
+            lRows = lCursor.getInt(4);
+            lCols = lCursor.getInt(5);
+            lContent = lCursor.getString(6);
+            lLibGame = new LibGame(lBatchId, lGameId, lDifficulty, lSolved > 0, lRows, lCols, lContent);
         }
         lCursor.close();
 
         lDB.close();
 
         return lLibGame;
+    }
+
+    void xStoreLibGame(LibGame pGame){
+        SQLiteDatabase lDB;
+        ContentValues lValues;
+
+        lDB = this.getWritableDatabase();
+
+        lValues = new ContentValues();
+        lValues.put("BatchId", pGame.xBatchId());
+        lValues.put("GameId", pGame.xGameId());
+        lValues.put("Rows", pGame.xRows());
+        lValues.put("Columns", pGame.xColumns());
+        lValues.put("Difficulty", pGame.xDifficulty());
+        lValues.put("Solved", 0);
+        lValues.put("Content", pGame.xContent());
+
+        lDB.insert("Lib", null, lValues);
+
+        lDB.close();
+    }
+
+    void xLibGamePlayed(int pBatchId, int pGameId){
+        SQLiteDatabase lDB;
+        ContentValues lValues;
+        String lSelection;
+        String[] lSelectionArgs;
+
+        lDB = this.getWritableDatabase();
+
+        lValues = new ContentValues();
+        lValues.put("Solved", 1);
+        lSelection = "BatchId = ? AND GameId = ?";
+        lSelectionArgs = new String[]{String.valueOf(pBatchId), String.valueOf(pGameId)};
+
+        lDB.update("Lib", lValues, lSelection, lSelectionArgs);
+
+        lDB.close();
+    }
+
+    void xLibGameSetDiff(int pBatchId, int pGameId, int pDifficulty){
+        SQLiteDatabase lDB;
+        ContentValues lValues;
+        String lSelection;
+        String[] lSelectionArgs;
+
+        lDB = this.getWritableDatabase();
+
+        lValues = new ContentValues();
+        lValues.put("Difficulty", pDifficulty);
+        lValues.put("Solved", 0);
+        lSelection = "BatchId = ? AND GameId = ?";
+        lSelectionArgs = new String[]{String.valueOf(pBatchId), String.valueOf(pGameId)};
+
+        lDB.update("Lib", lValues, lSelection, lSelectionArgs);
+
+        lDB.close();
+    }
+
+    int xCountLib(int pDifficulty, boolean pNew){
+        SQLiteDatabase lDB;
+        Cursor lCursor;
+        String[] lSelectionArgs;
+        String lQuery;
+        int lResult;
+
+        lDB = this.getReadableDatabase();
+        lQuery = "SELECT Count(*) from Lib WHERE Difficulty = ?";
+        if (pNew){
+            lQuery = lQuery + " AND Solved = 0";
+        }
+        lSelectionArgs = new String[]{String.valueOf(pDifficulty)};
+
+        lCursor = lDB.rawQuery(lQuery, lSelectionArgs);
+        if (lCursor.moveToFirst()){
+            lResult = lCursor.getInt(0);
+        } else {
+            lResult = -1;
+        }
+        lCursor.close();
+        lDB.close();
+        return lResult;
     }
 }

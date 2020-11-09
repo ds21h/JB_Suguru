@@ -28,4 +28,16 @@
     <string name="msg_no_selection">Niets Geselecteerd!</string>
     <string name="msg_game_stored">Spel Opgeslagen!</string>
     <string name="mnu_game">Spel</string>
+    <string name="mnu_lib">Bibliotheek</string>
+    <string name="mnu_import">Import</string>
+    <string name="msg_not_found">Niet Gevonden</string>
+    <string name="mnu_fields">SpeelVelden</string>
+    <string name="mnu_field_copy">Kopieer</string>
+    <string name="mnu_field_switch">Wissel</string>
+    <string name="mnu_field_delete">Verwijder</string>
+    <string name="mnu_pencil_auto">Auto aanpassen</string>
+    <string name="mnu_select_new">Nieuw spel</string>
+    <string name="mnu_level_und">Neem er maar een</string>
+    <string name="mnu_change_difficulty">Wijzig Moeilijkheid</string>
+    <string name="msg_difficulty_changed">Moeilijkheid gewijzigd</string>
 </resources>
