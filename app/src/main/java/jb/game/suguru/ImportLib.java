@@ -11,9 +11,8 @@ import java.lang.ref.WeakReference;
 
 class ImportLib implements Runnable {
     WeakReference<MainSuguru> mRefMain;
-    private Context mContext;
-    private Uri mLib;
-    private Data mData;
+    private final Context mContext;
+    private final Uri mLib;
 
     ImportLib(MainSuguru pMain, Context pContext, Uri pLib){
         mRefMain = new WeakReference<>(pMain);
@@ -23,13 +22,14 @@ class ImportLib implements Runnable {
 
     @Override
     public void run() {
+        Data lData;
         MainSuguru lMain;
         InputStream lInStream;
         BufferedReader lBuffer = null;
         String lLine;
         LibGame lGame;
 
-        mData = Data.getInstance(mContext);
+        lData = Data.getInstance(mContext);
         try{
             lInStream = mContext.getContentResolver().openInputStream(mLib);
             lBuffer = new BufferedReader(new InputStreamReader(lInStream));
@@ -37,16 +37,16 @@ class ImportLib implements Runnable {
             while (lLine != null){
                 lGame = new LibGame(lLine);
                 if (lGame.xValid()){
-                    mData.xStoreLibGame(lGame);
+                    lData.xStoreLibGame(lGame);
                 }
                 lLine = lBuffer.readLine();
             }
-        } catch (IOException pExc){
+        } catch (IOException ignored){
         }
         if (lBuffer != null){
             try {
                 lBuffer.close();
-            } catch (IOException pExc){
+            } catch (IOException ignored){
             }
         }
 

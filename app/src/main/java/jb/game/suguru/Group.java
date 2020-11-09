@@ -30,7 +30,7 @@ class Group {
             try {
                 lCellNr = Integer.parseInt(pContent.substring(lStart, lStart + 3));
                 xAdd(lCellNr);
-            } catch (NumberFormatException pExc){ }
+            } catch (NumberFormatException ignored){ }
             lStart += 3;
         }
     }

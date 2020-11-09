@@ -45,7 +45,7 @@ class LibData {
                 mNumberTotal[lCount] = lNumberTotal.optInt(lCount);
                 mNumberNew[lCount] = lNumberNew.optInt(lCount);
             }
-        } catch (JSONException pExc){
+        } catch (JSONException ignored){
         }
     }
 

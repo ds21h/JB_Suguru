@@ -32,7 +32,6 @@ public class MainSuguru extends Activity {
     private Bundle mGameParams = null;
     private Bundle mStoreParams = null;
     private Bundle mSelectDiffParams = null;
-    private Uri mLoadUri = null;
     private long mStartTime;
     private volatile boolean mLoadActive;
     private boolean mSelectNew;
@@ -44,8 +43,6 @@ public class MainSuguru extends Activity {
         @SuppressLint("DefaultLocale")
         @Override
         public void run() {
-            StringBuilder lBuilder;
-            int lCount;
             Instant lInstant;
             long lNowTime;
             int lElapsed;
@@ -96,7 +93,6 @@ public class MainSuguru extends Activity {
         setContentView(R.layout.mainsuguru_layout);
 
         String lLibData;
-        Thread lUpdate;
 
         mGame = new SuguruGame();
         mData = Data.getInstance(mContext);
@@ -211,8 +207,6 @@ public class MainSuguru extends Activity {
     @Override
     public boolean onPrepareOptionsMenu(Menu pMenu) {
         super.onPrepareOptionsMenu(pMenu);
-
-        List<PlayField> lFields;
 
         MenuItem lMnuNew;
         MenuItem lMenuVE;
@@ -402,25 +396,18 @@ public class MainSuguru extends Activity {
         LibGame lLibGame;
 
         lItem = pItem.getItemId();
-        switch (lItem) {
-            case R.id.mnuNewVE:
-                lDifficulty = 1;
-                break;
-            case R.id.mnuNewE:
-                lDifficulty = 2;
-                break;
-            case R.id.mnuNewM:
-                lDifficulty = 3;
-                break;
-            case R.id.mnuNewH:
-                lDifficulty = 4;
-                break;
-            case R.id.mnuNewVH:
-                lDifficulty = 5;
-                break;
-            default:
-                lDifficulty = 0;
-                break;
+        if (lItem == R.id.mnuNewVE) {
+            lDifficulty = 1;
+        } else if (lItem == R.id.mnuNewE) {
+            lDifficulty = 2;
+        } else if (lItem == R.id.mnuNewM) {
+            lDifficulty = 3;
+        } else if (lItem == R.id.mnuNewH) {
+            lDifficulty = 4;
+        } else if (lItem == R.id.mnuNewVH) {
+            lDifficulty = 5;
+        } else {
+            lDifficulty = 0;
         }
         lLibGame = mData.xRandomLibGame(mSelectNew, lDifficulty);
         if (lLibGame == null) {

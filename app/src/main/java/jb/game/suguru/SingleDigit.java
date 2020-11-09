@@ -5,7 +5,7 @@ import android.text.TextWatcher;
 import android.widget.EditText;
 
 class SingleDigit implements TextWatcher {
-    private EditText mEdtText;
+    private final EditText mEdtText;
     private String mValue;
 
     public SingleDigit(EditText pEdtText){

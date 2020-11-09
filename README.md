@@ -9,7 +9,7 @@ If you have any questions or remarks please send me a mail on ds21h@hotmail.com
 
 History
 
-Version 1.0.1 - 08-11-2020
+Version 1.0.1 - 09-11-2020
 -   Save on Switch Playfield was still synchronous. Now asynchronous.
 -   Created exception: When an empty cell is filled and marked as erroneous en then erased the pencil entries are not erased.
 -   Split Cell in ValueCell that holds the playing values and GameCell that holds some redundant information (for setup and for drawing). ValueCell is used in the Playfield, while GameCell is used in the Game.

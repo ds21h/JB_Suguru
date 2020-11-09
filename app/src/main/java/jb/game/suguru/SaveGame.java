@@ -3,8 +3,8 @@ package jb.game.suguru;
 import android.content.Context;
 
 class SaveGame implements Runnable {
-    private Context mContext;
-    private SuguruGameBase mGame;
+    private final Context mContext;
+    private final SuguruGameBase mGame;
 
     SaveGame (Context pContext, SuguruGameBase pGame){
         mContext = pContext.getApplicationContext();

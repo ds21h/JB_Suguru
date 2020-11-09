@@ -3,7 +3,7 @@ package jb.game.suguru;
 import java.util.Arrays;
 
 class ValueCell {
-    private int mMaxValue;
+    private final int mMaxValue;
     private int mValue;
     private boolean mFixed;
     private boolean mConflict;

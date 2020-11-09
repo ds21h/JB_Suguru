@@ -3,8 +3,8 @@ package jb.game.suguru;
 import android.content.Context;
 
 class SavePlayfield implements Runnable {
-    private Context mContext;
-    private PlayField mField;
+    private final Context mContext;
+    private final PlayField mField;
 
     SavePlayfield (Context pContext, PlayField pField){
         mContext = pContext.getApplicationContext();

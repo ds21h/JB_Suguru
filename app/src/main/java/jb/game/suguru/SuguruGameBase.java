@@ -496,7 +496,7 @@ class SuguruGameBase {
     void xProcessDigit(int pDigit) {
         ValueCell lValueCell;
         boolean lActionCorrect;
-        Boolean lCellFilled;
+        boolean lCellFilled;
 
         if (pDigit >= 1 && pDigit <= mMaxValue) {
             lValueCell = mPlayField.xSelectedCell();

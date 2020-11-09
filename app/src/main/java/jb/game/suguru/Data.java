@@ -490,7 +490,6 @@ class Data extends SQLiteOpenHelper {
         String lSequence;
         int lGroupId;
         String lContent;
-        int lPencil;
 
 
         lGroups = new ArrayList<>();

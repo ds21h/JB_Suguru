@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 class SuguruGame extends SuguruGameBase {
-    private List<PlayField> mPlayFields;
+    private final List<PlayField> mPlayFields;
 
     SuguruGame(){
         super();
@@ -72,15 +72,6 @@ class SuguruGame extends SuguruGameBase {
     }
 
     void xNewGame(LibGame pLibGame){
-        int lCount;
-        String lWork;
-        int lValue;
-        ValueCell lValueCell;
-        GameCell lGameCell;
-        Group lGroup;
-        int lMax;
-        int lSize;
-
         super.xNewGame(pLibGame);
         mPlayFields.clear();
         mPlayFields.add(xPlayField());

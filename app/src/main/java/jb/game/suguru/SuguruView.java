@@ -18,7 +18,7 @@ public class SuguruView extends View {
     private final int cButtonMargin = 20;
     private int mMargin = cMargin;
 
-    private Paint mPaint = new Paint();
+    private final Paint mPaint = new Paint();
 
     private final int cColorBackNorm = Color.argb(255, 255, 255, 245);
     private final int cColorBackFixed = Color.argb(255, 230, 230, 230);
@@ -44,7 +44,7 @@ public class SuguruView extends View {
     private RectF[] mButton = new RectF[6];
     private boolean mEnabled = true;
     private boolean mButtonsEnabled = false;
-    private Context mContext;
+    private final Context mContext;
 
     private intSuguruView mIntView = null;
 
@@ -138,7 +138,7 @@ public class SuguruView extends View {
         if (mGame != null){
             mButtonSize = (getWidth() / (float)(mGame.xMaxValue() + 2)) - (2 * cButtonMargin);
             lCellHor = (getWidth() - (2 * cMargin)) / (float)mGame.xColumns();
-            lCellVert = (getHeight() - cMargin - (3 * cButtonMargin) - mButtonSize) / ((float)(mGame.xRows() + 0.5F));
+            lCellVert = (getHeight() - cMargin - (3 * cButtonMargin) - mButtonSize) / (mGame.xRows() + 0.5F);
             if (lCellHor < lCellVert){
                 mCellSize = lCellHor;
                 mMargin = cMargin;

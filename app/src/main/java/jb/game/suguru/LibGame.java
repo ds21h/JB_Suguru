@@ -1,7 +1,5 @@
 package jb.game.suguru;
 
-import android.provider.MediaStore;
-
 class LibGame {
     private int mBatchId;
     private int mGameId;
