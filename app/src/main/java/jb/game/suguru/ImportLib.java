@@ -31,17 +31,20 @@ class ImportLib implements Runnable {
 
         lData = Data.getInstance(mContext);
         try{
+            lData.xStartImportGame();
             lInStream = mContext.getContentResolver().openInputStream(mLib);
             lBuffer = new BufferedReader(new InputStreamReader(lInStream));
             lLine = lBuffer.readLine();
             while (lLine != null){
                 lGame = new LibGame(lLine);
                 if (lGame.xValid()){
-                    lData.xStoreLibGame(lGame);
+                    lData.xStoreImportGame(lGame);
                 }
                 lLine = lBuffer.readLine();
             }
         } catch (IOException ignored){
+        } finally {
+            lData.xEndImportGame();
         }
         if (lBuffer != null){
             try {

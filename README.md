@@ -8,6 +8,9 @@ You can also take the source as a basis to build your own game.
 If you have any questions or remarks please send me a mail on ds21h@hotmail.com
 
 History
+    
+Version 1.0.2 - 19-02-2021
+-   Introduced transactions on the DB. The multi-threaded approach introduced in Version 1.0 sometimes caused problems with simultaneous access.
 
 Version 1.0.1 - 09-11-2020
 -   Save on Switch Playfield was still synchronous. Now asynchronous.
