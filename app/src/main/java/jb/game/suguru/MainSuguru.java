@@ -561,7 +561,7 @@ public class MainSuguru extends Activity {
         lIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         lIntent.addCategory(Intent.CATEGORY_OPENABLE);
 //        lIntent.setType("application/sgl");
-        lIntent.setType("*/sgl");
+        lIntent.setType("*/*");
 
         startActivityForResult(lIntent, cReqImport);
     }

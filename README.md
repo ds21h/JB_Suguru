@@ -11,6 +11,7 @@ History
     
 Version 1.0.2 - 19-02-2021
 -   Introduced transactions on the DB. The multi-threaded approach introduced in Version 1.0 sometimes caused problems with simultaneous access.
+-   Changed MIME-type in the Import function as the Google Files application doesn't handle it well (only possible file-picker in Android 11).
 
 Version 1.0.1 - 09-11-2020
 -   Save on Switch Playfield was still synchronous. Now asynchronous.
