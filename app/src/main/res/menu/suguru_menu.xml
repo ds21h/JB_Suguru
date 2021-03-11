@@ -2,6 +2,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/mnuUndo"
+        android:onClick="hUndo"
+        android:title="@string/mnu_undo" />
+    <item
         android:id="@+id/mnuNew"
         android:title="@string/mnu_game">
         <menu>

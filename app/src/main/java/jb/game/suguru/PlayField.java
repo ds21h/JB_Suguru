@@ -7,6 +7,11 @@ class PlayField {
     private boolean mPencilAuto;
     private int mSelection;
     private int mFilledCells;
+    private Action[] mActions;
+    private static final int cActionMax = 20;
+    private int mActionStart;
+    private int mActionNumber;
+    private Action mAction;
 
     PlayField(int pSize) {
         int lCount;
@@ -20,6 +25,7 @@ class PlayField {
         mPencilAuto = true;
         mSelection = 0;
         mFilledCells = 0;
+        sInitActions();
     }
 
     PlayField(int pFieldId, ValueCell[] pValueCells, int pSelection, boolean pPencil, boolean pPencilAuto) {
@@ -29,6 +35,7 @@ class PlayField {
         mPencilAuto = pPencilAuto;
         mSelection = pSelection;
         sCountFilledCells();
+        sInitActions();
     }
 
     PlayField(PlayField pField){
@@ -51,6 +58,7 @@ class PlayField {
         mPencilAuto = pField.mPencilAuto;
         mSelection = pField.mSelection;
         mFilledCells = pField.mFilledCells;
+        sInitActions();
     }
 
     void xSetFilledCells(){
@@ -66,6 +74,87 @@ class PlayField {
                 mFilledCells++;
             }
         }
+    }
+
+    private void sInitActions(){
+        mActions = new Action[cActionMax];
+        mActionStart = 0;
+        mActionNumber = 0;
+    }
+
+    void xActionBegin(){
+        mAction = new Action(mSelection, mFilledCells, mPencilMode, mPencilAuto);
+    }
+
+    void xActionEnd(){
+        int lIndex;
+
+        if (mAction != null){
+            lIndex = mActionStart + mActionNumber;
+            while (lIndex >= cActionMax){
+                lIndex -= cActionMax;
+            }
+            if (mActionNumber < cActionMax){
+                mActionNumber++;
+            } else {
+                mActionStart++;
+                if (mActionStart >= cActionMax){
+                    mActionStart = 0;
+                }
+            }
+            mActions[lIndex] = mAction;
+            mAction = null;
+        }
+    }
+
+    void xActionSaveCell(){
+        xActionSaveCell(mSelection);
+    }
+
+    void xActionSaveCell(int pCellNr){
+        if (mAction != null && pCellNr >= 0 && pCellNr < mValueCells.length){
+            mAction.xSaveCell(pCellNr, mValueCells[pCellNr]);
+        }
+    }
+
+    boolean xActionPresent(){
+        return mActionNumber > 0;
+    }
+
+    void xActionUndo(){
+        Action lAction;
+        int lIndex;
+
+        if (mActionNumber > 0){
+            mActionNumber--;
+            lIndex = mActionStart + mActionNumber;
+            while (lIndex >= cActionMax){
+                lIndex -= cActionMax;
+            }
+            lAction = mActions[lIndex];
+            mActions[lIndex] = null;
+            if (lAction != null){
+                sActionReverse(lAction);
+            }
+        }
+    }
+
+    void sActionReverse(Action pAction){
+        int lNumCell;
+        int lCount;
+        ActionCell lCell;
+        int lCellNr;
+
+        lNumCell = pAction.xNumCells();
+        for (lCount = lNumCell - 1; lCount >= 0; lCount--){
+            lCell = pAction.xGetCell(lCount);
+            lCellNr = lCell.xCellNr();
+            mValueCells[lCellNr] = new ValueCell(lCell.xCell());
+        }
+        mSelection = pAction.xSelection();
+        mFilledCells = pAction.xFilledCells();
+        mPencilMode = pAction.xPencilMode();
+        mPencilAuto = pAction.xPencilAuto();
     }
 
     int xFieldId(){
@@ -104,12 +193,18 @@ class PlayField {
         mPencilMode = !mPencilMode;
     }
 
-
     void xClearPencil(){
+        xClearPencil(false);
+    }
+
+    void xClearPencil(boolean pSave){
         int lCount;
         ValueCell lValueCell;
 
         for (lCount = 0; lCount < mValueCells.length; lCount++){
+            if (pSave){
+                xActionSaveCell(lCount);
+            }
             lValueCell = mValueCells[lCount];
             lValueCell.xClearPencils();
         }
@@ -138,6 +233,7 @@ class PlayField {
                 mValueCells[lCount].xPlayReset();
             }
         }
+        sInitActions();
     }
 
     boolean xSetSelectedCellValue(int pValue) {

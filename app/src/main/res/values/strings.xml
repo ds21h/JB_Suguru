@@ -39,4 +39,5 @@
     <string name="mnu_level_und">Just take one</string>
     <string name="mnu_change_difficulty">Change Difficulty</string>
     <string name="msg_difficulty_changed">Difficulty Changed</string>
+    <string name="mnu_undo">Undo</string>
 </resources>

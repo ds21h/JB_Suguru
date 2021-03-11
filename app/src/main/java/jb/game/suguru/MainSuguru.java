@@ -208,6 +208,7 @@ public class MainSuguru extends Activity {
     public boolean onPrepareOptionsMenu(Menu pMenu) {
         super.onPrepareOptionsMenu(pMenu);
 
+        MenuItem lMnuUndo;
         MenuItem lMnuNew;
         MenuItem lMenuVE;
         MenuItem lMenuE;
@@ -225,6 +226,7 @@ public class MainSuguru extends Activity {
         MenuItem lMnuLibrary;
         MenuItem lMnuChangeDiff;
 
+        lMnuUndo = pMenu.findItem(R.id.mnuUndo);
         lMnuNew = pMenu.findItem(R.id.mnuNew);
         lMenuVE = pMenu.findItem(R.id.mnuNewVE);
         lMenuE = pMenu.findItem(R.id.mnuNewE);
@@ -255,6 +257,7 @@ public class MainSuguru extends Activity {
 
         switch (mGame.xGameStatus()) {
             case SuguruGame.cStatusSetupGroups: {
+                lMnuUndo.setEnabled(false);
                 lMnuSetupFinish.setEnabled(false);
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
@@ -263,6 +266,7 @@ public class MainSuguru extends Activity {
                 break;
             }
             case SuguruGame.cStatusSetupValues: {
+                lMnuUndo.setEnabled(false);
                 lMnuSetupFinish.setEnabled(true);
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
@@ -271,6 +275,7 @@ public class MainSuguru extends Activity {
                 break;
             }
             case SuguruGame.cStatusPlay: {
+                lMnuUndo.setEnabled(mGame.xUndoAvail());
                 lMnuSetupFinish.setEnabled(false);
                 if (mGame.xLib()) {
                     lMnuStore.setEnabled(false);
@@ -284,6 +289,7 @@ public class MainSuguru extends Activity {
                 break;
             }
             case SuguruGame.cStatusSolved: {
+                lMnuUndo.setEnabled(false);
                 lMnuSetupFinish.setEnabled(false);
                 if (mGame.xLib()) {
                     lMnuStore.setEnabled(false);
@@ -296,6 +302,7 @@ public class MainSuguru extends Activity {
                 break;
             }
             default: {
+                lMnuUndo.setEnabled(false);
                 lMnuSetupFinish.setEnabled(false);
                 lMnuStore.setEnabled(false);
                 lMnuPencil.setEnabled(false);
@@ -384,6 +391,11 @@ public class MainSuguru extends Activity {
 
         lInstant = Instant.now();
         mGame.xAddUsedTime((int) (lInstant.getEpochSecond() - mStartTime));
+    }
+
+    public void hUndo(MenuItem pItem) {
+        mGame.xUndo();
+        mSgrView.invalidate();
     }
 
     public void hSelectNew(MenuItem pItem) {

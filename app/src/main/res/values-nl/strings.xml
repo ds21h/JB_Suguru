@@ -40,4 +40,5 @@
     <string name="mnu_level_und">Neem er maar een</string>
     <string name="mnu_change_difficulty">Wijzig Moeilijkheid</string>
     <string name="msg_difficulty_changed">Moeilijkheid gewijzigd</string>
+    <string name="mnu_undo">Stap terug</string>
 </resources>

@@ -1,4 +1,4 @@
-package jb.game.suguru;
+ package jb.game.suguru;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +25,6 @@ class SuguruGameBase {
     private int mGameId;
     private int mDifficulty;
     private boolean mLibSolved;
-    private boolean mPencilSafe;
 
     SuguruGameBase(){
         mGameStatus = cStatusNone;
@@ -41,7 +40,6 @@ class SuguruGameBase {
         mGameId = -1;
         mDifficulty = 0;
         mLibSolved = false;
-        mPencilSafe = false;
     }
 
     SuguruGameBase(SuguruGameBase pGame){
@@ -69,7 +67,6 @@ class SuguruGameBase {
         mGameId = pGame.mGameId;
         mDifficulty = pGame.mDifficulty;
         mLibSolved = pGame.mLibSolved;
-        mPencilSafe = pGame.mPencilSafe;
     }
 
     void xInitGame(List<Group> pGroups, PlayField pField, int pGameRows, int pGameColumns,
@@ -108,7 +105,6 @@ class SuguruGameBase {
         mGameId = pGameId;
         mDifficulty = pDifficulty;
         mLibSolved = pLibSolved;
-        mPencilSafe = false;
     }
 
     private void sInitGameCells(){
@@ -380,10 +376,7 @@ class SuguruGameBase {
                 }
             }
         } else {
-            if (lCellNr != mPlayField.xSelection()){
-                mPencilSafe = false;
-                mPlayField.xSelection(lCellNr);
-            }
+            mPlayField.xSelection(lCellNr);
         }
     }
 
@@ -493,21 +486,39 @@ class SuguruGameBase {
         mUsedTime = 0;
     }
 
+    void xUndo(){
+        mPlayField.xActionUndo();
+    }
+
+    boolean xUndoAvail(){
+        boolean lResult;
+
+        if (mGameStatus == cStatusPlay){
+            lResult = mPlayField.xActionPresent();
+        } else {
+            lResult = false;
+        }
+        return lResult;
+    }
+
     void xProcessDigit(int pDigit) {
         ValueCell lValueCell;
-        boolean lActionCorrect;
         boolean lCellFilled;
 
         if (pDigit >= 1 && pDigit <= mMaxValue) {
             lValueCell = mPlayField.xSelectedCell();
             if (mPlayField.xPencilMode()) {
                 if (lValueCell.xValue() == 0){
+                    mPlayField.xActionBegin();
+                    mPlayField.xActionSaveCell();
                     lValueCell.xPencilFlip(pDigit);
+                    mPlayField.xActionEnd();
                 }
             } else {
                 if (!lValueCell.xFixed()) {
-                    lActionCorrect = true;
                     lCellFilled = mPlayField.xSelectedCell().xValue() > 0;
+                    mPlayField.xActionBegin();
+                    mPlayField.xActionSaveCell();
                     if (mPlayField.xSetSelectedCellValue(pDigit)){
                         if (sCheckGame()){
                             if (mPlayField.xFieldFull()){
@@ -518,21 +529,14 @@ class SuguruGameBase {
                                     sAdjustSurr(mPlayField.xSelection(), pDigit);
                                 }
                             }
-                        } else {
-                            lActionCorrect = false;
-                            if (!lCellFilled){
-                                mPencilSafe = true;
-                            }
                         }
                     } else {
                         sCheckGame();
                     }
-                    if (lCellFilled && mPlayField.xPencilAuto() && !mPencilSafe){
-                        mPlayField.xClearPencil();
+                    if (lCellFilled && mPlayField.xPencilAuto()){
+                        mPlayField.xClearPencil(true);
                     }
-                    if (mPencilSafe && lActionCorrect){
-                        mPencilSafe = false;
-                    }
+                    mPlayField.xActionEnd();
                 }
             }
         }
@@ -577,10 +581,13 @@ class SuguruGameBase {
     void sAdjustGroup(int pCellNr, int pPencil){
         Group lGroup;
         int lCount;
+        int lCellNr;
 
         lGroup = mGroups.get(mGameCells[pCellNr].xGroup());
         for (lCount = 0; lCount < lGroup.xSize(); lCount++){
-            mPlayField.xCell(lGroup.xCell(lCount)).xPencil(pPencil, false);
+            lCellNr = lGroup.xCell(lCount);
+            mPlayField.xActionSaveCell(lCellNr);
+            mPlayField.xCell(lCellNr).xPencil(pPencil, false);
         }
     }
 
@@ -591,6 +598,7 @@ class SuguruGameBase {
         int lStartColumn;
         int lEndColumn;
         int lColumn;
+        int lCellNr;
 
         lRow = pCellNr / mColumns;
         lColumn = pCellNr % mColumns;
@@ -601,7 +609,9 @@ class SuguruGameBase {
 
         for (lRow = lStartRow; lRow <= lEndRow; lRow++){
             for (lColumn = lStartColumn; lColumn <= lEndColumn; lColumn++){
-                mPlayField.xCell(lRow * mColumns + lColumn).xPencil(pPencil, false);
+                lCellNr = lRow * mColumns + lColumn;
+                mPlayField.xActionSaveCell(lCellNr);
+                mPlayField.xCell(lCellNr).xPencil(pPencil, false);
             }
         }
     }
