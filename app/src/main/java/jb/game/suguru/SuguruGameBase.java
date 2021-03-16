@@ -488,6 +488,7 @@ class SuguruGameBase {
 
     void xUndo(){
         mPlayField.xActionUndo();
+        sCheckGame();
     }
 
     boolean xUndoAvail(){

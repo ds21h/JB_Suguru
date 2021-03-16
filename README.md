@@ -9,7 +9,7 @@ If you have any questions or remarks please send me a mail on ds21h@hotmail.com
 
 History
 
-Version 1.0.3 - 11-03-2021
+Version 1.0.3 - 16-03-2021
 -   Deleted the exception introduced in version 1.0.1 as it proved insufficient.
 -   Introduced a basic undo function (buffer 20 entries and only during the current transaction). 
    
