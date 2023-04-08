@@ -9,8 +9,10 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -38,7 +40,7 @@ public class MainSuguru extends Activity {
     private LibData mLibData;
     private String mHeader;
 
-    Handler mRefreshHandler = new Handler();
+    Handler mRefreshHandler = new Handler(Looper.getMainLooper());
     Runnable mRefreshRunnable = new Runnable() {
         @SuppressLint("DefaultLocale")
         @Override
@@ -91,6 +93,7 @@ public class MainSuguru extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mainsuguru_layout);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         String lLibData;
 
